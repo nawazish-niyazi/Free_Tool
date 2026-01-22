@@ -1,0 +1,9 @@
+{
+    "ignore": [
+        "temp/*",
+        "**/lo_profile_*",
+        "error_log.txt",
+        "test_service.js"
+    ],
+    "delay": "2500"
+}

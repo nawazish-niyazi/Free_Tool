@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/temp:/app/temp
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+    networks:
+      - nair-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - nair-network
+
+networks:
+  nair-network:
+    driver: bridge

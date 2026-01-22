@@ -1,0 +1,153 @@
+N.A.I.R Solutions – All-in-One File Converter
+=============================================
+
+This document lists all the features of the website, the technologies used for each, a simple explanation of how they work, and the files where the code is written.
+
+1. Convert to PDF
+----------------
+- Technology: React (Frontend), Node.js, Express, LibreOffice (Backend).
+- Explanation: This feature allows you to upload Word documents, Excel sheets, PowerPoint presentations, and common images (JPG, PNG) to convert them into a professional PDF format.
+- Code Files:
+  - Frontend: /frontend/src/pages/PdfTools.jsx
+  - Backend: /backend/src/services/pdfService.js (Conversion logic)
+  - Backend: /backend/src/routes/pdfRoutes.js (API route)
+
+2. Convert from PDF
+------------------
+- Technology: React (Frontend), Node.js, Express, LibreOffice/PDF-Lib (Backend).
+- Explanation: This tool takes an existing PDF and converts it back into editable formats like Microsoft Word (.docx) or Excel (.xlsx), or extracts pages as high-quality images.
+- Code Files:
+  - Frontend: /frontend/src/pages/PdfTools.jsx
+  - Backend: /backend/src/services/pdfService.js
+  - Backend: /backend/src/routes/pdfRoutes.js
+
+3. Compress PDF
+---------------
+- Technology: React (Frontend), Node.js, Express, Ghostscript (Backend).
+- Explanation: It reduces the file size of your PDF documents (using levels like "Extreme", "Recommended", or "High Quality") so they are easier to share via email.
+- Code Files:
+  - Frontend: /frontend/src/pages/PdfTools.jsx
+  - Backend: /backend/src/services/pdfService.js
+  - Backend: /backend/src/routes/pdfRoutes.js
+
+4. Protect & Unlock PDF
+-----------------------
+- Technology: React (Frontend), Node.js, Express, PDF-Lib/QPDF (Backend).
+- Explanation: "Protect" allows you to set a password on your PDF to keep it secure. "Unlock" lets you remove the password if you know what it is.
+- Code Files:
+  - Frontend: /frontend/src/pages/PdfTools.jsx
+  - Backend: /backend/src/services/pdfService.js
+  - Backend: /backend/src/routes/pdfRoutes.js
+
+5. Add Watermark to PDF
+-----------------------
+- Technology: React (Frontend), Node.js, Express, PDF-Lib (Backend).
+- Explanation: Adds custom text or images (like logos) onto every page of a PDF. You can control the opacity, rotation, and size of the watermark.
+- Code Files:
+  - Frontend: /frontend/src/pages/WatermarkPage.jsx
+  - Backend: /backend/src/services/pdfService.js (Watermark logic)
+
+6. Electronic Signatures (eSign)
+--------------------------------
+- Technology: React, Signature Pad (Frontend), Node.js, Express, PDF-Lib (Backend).
+- Explanation: Users can draw their signature on a digital pad or type their name to sign a PDF document electronically.
+- Code Files:
+  - Frontend: /frontend/src/pages/ESignPage.jsx
+  - Backend: /backend/src/services/eSignService.js
+  - Backend: /backend/src/routes/eSignRoutes.js
+
+7. Invoice Generator
+--------------------
+- Technology: React (Frontend), Express, EJS Templates, Puppeteer (Backend).
+- Explanation: A professional tool where you can enter business details and line items to generate a beautiful, ready-to-print PDF invoice.
+- Code Files:
+  - Frontend: /frontend/src/pages/InvoiceGenerator.jsx
+  - Backend: /backend/src/services/invoiceService.js
+  - Backend: /backend/src/templates/ (Invoice EJS templates)
+
+8. Image Tools Dashboard (Resize, Compress & Convert)
+------------------------------------------------------
+- Technology: React, HTML5 Canvas API (Frontend).
+- Explanation: A central hub for image manipulation. Users can resize images (change width/height), compress them (reduce KB/MB), and convert between formats like JPG, PNG, and WebP. Processing happens in the browser for privacy and speed.
+- Code Files:
+  - Frontend: /frontend/src/pages/ImageTools.jsx
+
+9. AI Background Removal (Premium Tool)
+--------------------------------------
+- Technology: Python, Flask (Backend), Rembg (AI Model), React (Frontend).
+- Explanation: Uses artificial intelligence to detect the subject of an image and remove the background automatically. This is a computation-heavy task handled by a dedicated Python service.
+- Code Files:
+  - Frontend: /frontend/src/pages/BackgroundRemoval.jsx
+  - AI Service: /ai-service/app.py
+  - Main Backend Proxy: /backend/src/routes/imageRoutes.js
+
+10. Modern Design & User Interface (UI/UX)
+-----------------------------------------
+- Technology: React, Tailwind CSS, Lucide React (Icons), Framer Motion (Animations).
+- Explanation: The website uses a modern, responsive design featuring smooth animations, premium typography, and a "clean dashboard" look. Redundant tools are consolidated into their respective hubs (PDF or Image).
+- Code Files:
+  - Styles: /frontend/src/index.css
+  - Main App: /frontend/src/App.jsx
+  - Navigation: /frontend/src/components/Navbar.jsx
+
+11. Core Infrastructure & Multi-Service setup
+---------------------------------------------
+- Technology: MERN Stack (Node, Express, React, MongoDB), Python Flask, Docker.
+- Explanation: The project runs three distinct services (Node backend on 5000, React frontend on 5173, and Python AI on 5001). They share a central temporary folder for file processing and are orchestrated via a root package.json.
+- Code Files:
+  - Server Setup: /backend/src/server.js
+  - AI Server: /ai-service/app.py
+  - Orchestration: /package.json
+  - Deployment: /docker-compose.yml
+
+  Deploying on a VPS (like DigitalOcean, Linode, or Hostinger) is the best choice for "N.A.I.R Solutions" because you have full control over the system to install the heavy tools you need (LibreOffice, Ghostscript).
+
+Here is the exact roadmap and the checklist of what you will need to do:
+
+1. The "Must-Have" Checklist for your VPS
+Before your code can even start, you must install these on your VPS (assuming Ubuntu):
+
+Node.js & NPM: To run the apps.
+PM2: A process manager that keeps your server running 24/7 (even if it crashes or the VPS restarts).
+MongoDB: Either install it on the VPS or use MongoDB Atlas (Cloud).
+Nginx: To act as a "Reverse Proxy" (this allows users to access your site via nairsolutions.com instead of IP:5000).
+The Heavy Lift Tools:
+bash
+sudo apt update
+sudo apt install libreoffice ghostscript  # CRITICAL for conversions
+2. The Step-by-Step Deployment Roadmap
+Step A: Preparation (Do this now)
+You need to make sure your code doesn't have "localhost" hardcoded everywhere.
+
+Frontend: Create a .env file for the frontend where VITE_API_URL points to your VPS IP or Domain.
+Backend: Ensure process.env.MONGODB_URI and process.env.JWT_SECRET are used.
+Step B: Transferring Code
+The easiest way is to push your code to GitHub and then git clone it onto your VPS.
+
+Step C: Running the Backend
+On your VPS, navigate to the backend folder and run:
+
+bash
+npm install
+npm install -g pm2
+pm2 start src/server.js --name nair-backend
+Step D: Building the Frontend
+Since the frontend is a React (Vite) app, you don't "run" it like the backend. You "build" it into static files:
+
+bash
+cd frontend
+npm install
+npm run build
+This will create a dist folder. You will tell Nginx to serve the files inside this dist folder to your visitors.
+
+Step E: Domain & SSL (HTTPS)
+Use Certbot (Let's Encrypt) to get a free SSL certificate so your site has the "lock" icon and is secure for user logins.
+
+🚀 Simplified Way: Use Docker
+Since you already have docker-compose.yml, you can actually skip manual installation of LibreOffice/Ghostscript on the VPS:
+
+Install Docker and Docker Compose on your VPS.
+Upload your project.
+Run: docker-compose up -d --build. Docker will automatically set up the OS, the tools, and the code inside a "bubble" so it works perfectly without you touching the VPS system settings.
+My Recommendation for Next Steps:
+Would you like me to search through your code and find all the places where localhost is used? I can replace them with process.env variables so your code is "deployment-ready" right now.
