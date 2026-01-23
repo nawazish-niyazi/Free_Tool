@@ -9,13 +9,25 @@ import RemoveWatermarkPage from './pages/RemoveWatermarkPage';
 import InvoiceGenerator from './pages/InvoiceGenerator';
 import BackgroundRemoval from './pages/BackgroundRemoval';
 import LocalHelpPage from './pages/LocalHelpPage';
+import QrGenerator from './pages/QrGenerator';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import LandingPage from './pages/LandingPage';
 
 // Placeholders for now
 // const PdfTools = () => <div className="p-10">PDF Tools Page (Coming Soon)</div>;
 // const ImageTools = () => <div className="p-10">Image Tools Page (Coming Soon)</div>;
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AdminProvider, useAdmin } from './context/AdminContext';
 import AuthModal from './components/AuthModal';
+
+const ProtectedAdminRoute = ({ children }) => {
+  const { isAdminLoggedIn, adminLoading } = useAdmin();
+  if (adminLoading) return null;
+  if (!isAdminLoggedIn) return <AdminLogin />;
+  return children;
+};
 
 function AppContent() {
   const { showAuthModal, setShowAuthModal } = useAuth();
@@ -36,6 +48,19 @@ function AppContent() {
         <Route path="/invoice-generator" element={<InvoiceGenerator />} />
         <Route path="/background-removal" element={<BackgroundRemoval />} />
         <Route path="/local-help" element={<LocalHelpPage />} />
+        <Route path="/qr-generator" element={<QrGenerator />} />
+        <Route path="/q/:shortId" element={<LandingPage />} />
+
+        {/* Admin Routes */}
+        <Route path="/management/login" element={<AdminLogin />} />
+        <Route
+          path="/management/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
       </Routes>
     </div>
   );
@@ -44,9 +69,11 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <AdminProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </AdminProvider>
     </Router>
   );
 }

@@ -1,167 +1,150 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { Search, MapPin, Briefcase, Phone, User, Star, ShieldCheck, Clock, MessageSquare, Send } from 'lucide-react';
+import { Search, MapPin, Briefcase, Phone, User, Star, ShieldCheck, Clock, MessageSquare, Send, ChevronRight, Lock, Loader2, Sparkles, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+
+const CATEGORIES = [
+    {
+        name: "House Needs",
+        services: ["Electrician", "Plumber", "Carpenter", "Carpenter with Supplies", "Painter", "House Help", "Gardener", "Water Supply", "Lock and Key", "AC Repair", "RO Repair", "Garbage Collector"]
+    },
+    {
+        name: "Food & Help",
+        services: ["Cook", "Helper", "Local Mess"]
+    },
+    {
+        name: "Automobile",
+        services: ["Driver", "Driver + Vehicle", "Auto Driver"]
+    },
+    {
+        name: "Mechanics and Repairing",
+        services: ["Car Mechanic", "Bike Mechanic", "Car Wash", "RO Repair", "AC Repair", "Laptop Repair"]
+    },
+    {
+        name: "Entertainment",
+        services: ["Anchor", "Clown", "Poet", "Comedian", "Singer", "Dancer", "Sound Engineer", "DJ"]
+    },
+    {
+        name: "Fashion & Makeup",
+        services: ["Makeup Artist", "Designer", "Tailor", "Salon", "Tattoo Artist"]
+    },
+    {
+        name: "Art & Crafts",
+        services: ["Potter", "Sculpture Artist", "Wall Art", "Handicrafts", "Mehendi Artist"]
+    },
+    {
+        name: "Freelancers",
+        services: ["Project Developer", "Practical Writer", "Photographer", "Editor", "Matchmaker", "Vet Grooming", "Vet Health"]
+    },
+    {
+        name: "Tutors",
+        services: ["Educational Tutor", "Sign Language", "Braille", "Cooking Tutor", "Martial Art", "Yoga"]
+    },
+    {
+        name: "Health & Care",
+        services: ["Doctor", "Caretaker", "Babysitter", "House Nurse", "Private Ambulance", "Therapist", "Counselor", "Massage Therapist", "Dietitian", "Mortuary"]
+    },
+    {
+        name: "Religious Center",
+        services: ["Pandit", "Qadri & Imam", "Church Father", "Bhajan Mandli"]
+    },
+    {
+        name: "Govt Center",
+        services: ["Choice Center", "NGO Helpline"]
+    },
+    {
+        name: "Caterers & Tent",
+        services: ["Catering", "Tent", "Catering + Tent", "Transgender Help"]
+    },
+    {
+        name: "Others",
+        services: ["Construction Worker", "Donation & Recycling"]
+    }
+];
+
+const LOCATIONS = ["Smriti Nagar", "Nehru Nagar", "Kohka", "Supela", "Durg"];
 
 const LocalHelpPage = () => {
-    const locations = ["smriti nagar", "Nehru Nagar", "Kohka", "Supela", "durg"];
-    const jobs = ["plumber", "electrician", "carpenter", "painter", "mechanic", "cleaning", "gardener", "ac repair"];
-
-    const generateDemoData = () => {
-        const locs = ["smriti nagar", "Nehru Nagar", "Kohka", "Supela", "durg"];
-        const categories = ["plumber", "electrician", "carpenter", "painter", "mechanic", "cleaning", "gardener", "ac repair"];
-        const fNames = ["Amit", "Rahul", "Vijay", "Suresh", "Deepak", "Rajesh", "Mukesh", "Sanjay", "Anil", "Sunil", "Manish", "Pankaj", "Rakesh", "Arjun", "Karan", "Vivek", "Akash", "Vikram", "Sameer", "Rohan", "Nitin", "Piyush", "Gaurav", "Harsh"];
-        const lNames = ["Sharma", "Verma", "Gupta", "Patel", "Singh", "Kumar", "Yadav", "Mishra", "Jha", "Choudhary", "Sahni", "Tiwari", "Pandey", "Rathore", "Sahu", "Shrivastav", "Dubey", "Maurya"];
-
-        const reviewerNames = ["Sneha Patel", "Vikram Singh", "Anjali Verma", "Manoj Bajpayee", "Pooja Hegde", "Arjun Mehra", "Neha Gupta", "Rohan Das", "Sunita Rao", "Kunal Kohli", "Varun Dhawan", "Sara Khan", "Pankaj Tiwari", "Radhika Apte", "Ayushmann Khurrana", "Ishita Dutta"];
-
-        const reviewPool = {
-            "plumber": [
-                "Fixed the kitchen leak perfectly. Very professional and arrived on time.",
-                "Expert plumber! He suggested a much better piping route that saved me money.",
-                "Reliable and honest. Didn't charge extra for the late-night emergency visit."
-            ],
-            "electrician": [
-                "Found a short circuit in my house that 2 others missed. Highly skilled.",
-                "Very neat wiring work. He even labeled all the switches in the new board.",
-                "Quick and efficient. Fixed my AC starter issue in less than 20 minutes."
-            ],
-            "carpenter": [
-                "Exceptional craftsmanship. The custom bookshelf he made is the highlight of my room.",
-                "Repaired my antique wooden door with great care. Looks brand new now.",
-                "Very creative carpenter. He gave me a great idea for a space-saving cabinet."
-            ],
-            "painter": [
-                "World-class finishing! The textured paint in my living room looks amazing.",
-                "Very clean worker. They covered all my furniture properly before starting.",
-                "Patiently helped me choose the perfect shade for my bedroom. Great results."
-            ],
-            "mechanic": [
-                "Only mechanic I trust with my car. Transparent pricing and great service.",
-                "Diagnosed the engine noise quickly. My vehicle is running smoother than ever.",
-                "Friendly and knowledgeable. Explained the parts replacement in detail."
-            ],
-            "cleaning": [
-                "Deep cleaning service was incredible. They reached every corner of the house.",
-                "Eco-friendly cleaning products used. My house feels fresh and safe for kids.",
-                "Punctual team. They transformed my messy kitchen into a sparkling one."
-            ],
-            "gardener": [
-                "Transformed my balcony into a green paradise. High quality plants used.",
-                "Excellent knowledge of seasonal flowers. My garden is blooming beautifully.",
-                "Regular maintenance is great. He is very dedicated and hard-working."
-            ],
-            "ac repair": [
-                "The cooling is much better now after the servicing. Great technical skill.",
-                "Very polite and explained the coolant leak issue clearly. Fixed it quickly.",
-                "Professional AC service. They did a thorough check-up of all units."
-            ]
-        };
-
-        const data = [];
-        let idCount = 1;
-
-        locs.forEach(loc => {
-            categories.forEach(job => {
-                // Generate 3 unique workers for EVERY specific location and service combo
-                for (let i = 0; i < 3; i++) {
-                    const firstName = fNames[(idCount * 13) % fNames.length];
-                    const lastName = lNames[(idCount * 17) % lNames.length];
-
-                    const jobReviews = reviewPool[job] || ["Good service", "Professional work"];
-
-                    data.push({
-                        id: idCount,
-                        name: `${firstName} ${lastName}`,
-                        number: `+91 ${91000 + (idCount * 7)} ${54000 + (idCount * 3)}`,
-                        location: loc, // Assigned to a SPECIFIC location
-                        job: job,
-                        rating: parseFloat((4.2 + (Math.sin(idCount) * 0.7)).toFixed(1)),
-                        experience: `${3 + (idCount % 12)} years`,
-                        reviews: [
-                            {
-                                id: 1,
-                                user: reviewerNames[(idCount * 7) % reviewerNames.length],
-                                rating: 5,
-                                comment: jobReviews[idCount % jobReviews.length]
-                            },
-                            {
-                                id: 2,
-                                user: reviewerNames[(idCount * 11) % reviewerNames.length],
-                                rating: 4,
-                                comment: jobReviews[(idCount + 1) % jobReviews.length]
-                            }
-                        ]
-                    });
-                    idCount++;
-                }
-            });
-        });
-        return data;
-    };
-
-    const initialData = generateDemoData();
-
     const { user: authUser, isLoggedIn, setShowAuthModal } = useAuth();
     const navigate = useNavigate();
 
-    // Load initial data and merge with localStorage
-    const [workers, setWorkers] = useState(() => {
-        const saved = localStorage.getItem('nair_local_help_v2'); // Incremented version to force update
-        if (saved) {
-            return JSON.parse(saved);
-        }
-        return initialData;
-    });
-
-    // Save to localStorage whenever workers state changes
-    useEffect(() => {
-        localStorage.setItem('nair_local_help_v2', JSON.stringify(workers));
-    }, [workers]);
+    const [workers, setWorkers] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState('');
-    const [selectedJob, setSelectedJob] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedService, setSelectedService] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
-
-    // State for temporary review input
     const [newReview, setNewReview] = useState({ workerId: null, rating: 5, comment: '' });
 
-    // State for applied filters
-    const [activeFilters, setActiveFilters] = useState({ location: '', job: '' });
+    const fetchWorkers = async () => {
+        setLoading(true);
+        try {
+            const params = {};
+            if (selectedLocation) params.location = selectedLocation.toLowerCase();
+            if (selectedCategory) params.category = selectedCategory;
+            if (selectedService) params.service = selectedService;
+
+            const res = await axios.get('http://localhost:5000/api/local-help/professionals', { params });
+            if (res.data.success) {
+                setWorkers(res.data.data);
+            }
+        } catch (err) {
+            console.error('Fetch error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = () => {
-        setActiveFilters({ location: selectedLocation, job: selectedJob });
+        fetchWorkers();
         setHasSearched(true);
     };
 
-    const filteredWorkers = workers.filter(item => {
-        const locationMatch = activeFilters.location ? item.location === activeFilters.location : true;
-        const jobMatch = activeFilters.job ? item.job === activeFilters.job : true;
-        return locationMatch && jobMatch;
-    });
-
-    const handleAddReview = (workerId) => {
+    const handleAddReview = async (workerId) => {
         if (!newReview.comment.trim()) return;
 
-        setWorkers(prevWorkers => prevWorkers.map(worker => {
-            if (worker.id === workerId) {
-                const updatedReviews = [
-                    ...worker.reviews,
-                    {
-                        id: Date.now(),
-                        user: authUser?.name || "Anonymous",
-                        rating: newReview.rating,
-                        comment: newReview.comment
-                    }
-                ];
-                // Recalculate average rating
-                const avgRating = updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
-                return { ...worker, reviews: updatedReviews, rating: parseFloat(avgRating.toFixed(1)) };
+        try {
+            const res = await axios.post(`http://localhost:5000/api/local-help/review/${workerId}`, {
+                rating: newReview.rating,
+                comment: newReview.comment
+            });
+
+            if (res.data.success) {
+                // Update local state
+                setWorkers(prev => prev.map(w => w._id === workerId ? res.data.data : w));
+                setNewReview({ workerId: null, rating: 5, comment: '' });
             }
-            return worker;
-        }));
-        setNewReview({ workerId: null, rating: 5, comment: '' });
+        } catch (err) {
+            console.error('Review error:', err);
+            alert('Failed to add review');
+        }
     };
+
+    const seedData = async () => {
+        if (!window.confirm("This will reset and seed new professionals data. Continue?")) return;
+        setLoading(true);
+        try {
+            await axios.post('http://localhost:5000/api/local-help/seed');
+            fetchWorkers();
+            alert("Data seeded successfully!");
+        } catch (err) {
+            console.error('Seed error:', err);
+            alert('Seed failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Update derived services when category changes
+    const availableServices = CATEGORIES.find(c => c.name === selectedCategory)?.services || [];
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            fetchWorkers();
+        }
+    }, [isLoggedIn]);
 
     if (!isLoggedIn) {
         return (
@@ -197,207 +180,246 @@ const LocalHelpPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 uppercase-links">
+        <div className="min-h-screen bg-gray-50">
             <Navbar />
 
-            <div className="max-w-6xl mx-auto px-6 py-12">
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
-                        <Search className="text-blue-600 w-10 h-10" />
-                        Local Help Services
+            <div className="max-w-7xl mx-auto px-6 py-12">
+                <div className="text-center mb-10">
+                    <div className="inline-flex py-2 px-4 bg-blue-50 text-blue-600 rounded-full font-bold text-[11px] uppercase tracking-widest mb-4 border border-blue-100 shadow-sm items-center gap-2">
+                        <Sparkles size={14} /> Verified Help Line
+                    </div>
+                    <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight uppercase">
+                        Local <span className="text-blue-600">Help Line</span>
                     </h1>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Find verified, high-quality local professionals in your area.
+                    <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto">
+                        Find verified professionals for all your home, automobile, and personal needs in your neighborhood.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Filters Sidebar */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
-                            <h2 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <Search className="w-5 h-5 text-blue-600" />
-                                Search Filters
-                            </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div className="lg:col-span-3">
+                        <div className="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-gray-100 p-6 sticky top-24">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                    <Filter className="text-blue-600" size={20} /> Filters
+                                </h2>
+                                <button
+                                    onClick={seedData}
+                                    className="text-[9px] font-black text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
+                                    title="Developer: Click to reset demo data"
+                                >
+                                    Reset Data
+                                </button>
+                            </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">Location</label>
-                                    <select
-                                        value={selectedLocation}
-                                        onChange={(e) => setSelectedLocation(e.target.value)}
-                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    >
-                                        <option value="">All Locations</option>
-                                        {locations.map(loc => (
-                                            <option key={loc} value={loc}>{loc.charAt(0).toUpperCase() + loc.slice(1)}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div className="space-y-5">
+                                {/* Location Select */}
+                                <section>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Where?</label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
+                                        <select
+                                            value={selectedLocation}
+                                            onChange={(e) => setSelectedLocation(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
+                                        >
+                                            <option value="">All Locations</option>
+                                            {LOCATIONS.map(loc => (
+                                                <option key={loc} value={loc.toLowerCase()}>{loc}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </section>
 
-                                <div>
-                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">Service Type</label>
-                                    <select
-                                        value={selectedJob}
-                                        onChange={(e) => setSelectedJob(e.target.value)}
-                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    >
-                                        <option value="">All Services</option>
-                                        {jobs.map(job => (
-                                            <option key={job} value={job}>{job.charAt(0).toUpperCase() + job.slice(1)}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {/* Category Select */}
+                                <section>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Category</label>
+                                    <div className="relative">
+                                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => {
+                                                setSelectedCategory(e.target.value);
+                                                setSelectedService('');
+                                            }}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
+                                        >
+                                            <option value="">All Categories</option>
+                                            {CATEGORIES.map(cat => (
+                                                <option key={cat.name} value={cat.name}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </section>
+
+                                {/* Service (Sub-category) Select */}
+                                <section className={`transition-all duration-300 ${!selectedCategory ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Specific Service</label>
+                                    <div className="relative">
+                                        <ChevronRight className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
+                                        <select
+                                            value={selectedService}
+                                            onChange={(e) => setSelectedService(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
+                                        >
+                                            <option value="">{selectedCategory ? `All ${selectedCategory}` : "Select Category"}</option>
+                                            {availableServices.map(svc => (
+                                                <option key={svc} value={svc}>{svc}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </section>
 
                                 <button
                                     onClick={handleSearch}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-100 mt-4"
+                                    disabled={loading}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-lg shadow-blue-200 transition-all flex justify-center items-center gap-2.5 text-base disabled:opacity-50 group mt-2"
                                 >
-                                    Apply Search
+                                    {loading ? <Loader2 className="animate-spin" size={20} /> : <>Apply Search <Search size={20} className="group-hover:translate-x-0.5 transition-transform" /></>}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Results Area */}
-                    <div className="lg:col-span-3">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                {hasSearched ? `Search Results (${filteredWorkers.length})` : 'Find Local Professionals'}
-                            </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-8">
-                            {!hasSearched ? (
-                                <div className="py-24 text-center bg-white rounded-[3rem] border border-blue-100 shadow-sm">
-                                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <Search className="w-10 h-10 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-2xl font-black text-gray-900 mb-2">Ready to find help?</h3>
-                                    <p className="text-gray-500 max-w-sm mx-auto">
-                                        Select a location and service type from the sidebar to see available professionals in your area.
-                                    </p>
+                    {/* Results List */}
+                    <div className="lg:col-span-9">
+                        {loading && workers.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
+                                <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                                <p className="font-bold text-slate-500 uppercase tracking-widest">Searching Professionals...</p>
+                            </div>
+                        ) : workers.length > 0 ? (
+                            <div className="space-y-8">
+                                <div className="flex items-center justify-between mb-4 px-2">
+                                    <h3 className="font-black text-slate-800 text-xl uppercase tracking-tight">
+                                        {workers.length} Professionals <span className="text-blue-600">Found</span>
+                                    </h3>
                                 </div>
-                            ) : filteredWorkers.length > 0 ? (
-                                filteredWorkers.map(person => (
-                                    <div key={person.id} className="bg-white rounded-3xl border border-gray-100 hover:shadow-2xl transition-all overflow-hidden">
-                                        <div className="p-8">
-                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                                                <div className="flex items-center gap-6">
-                                                    <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-600 shadow-inner">
-                                                        <User className="w-10 h-10" />
-                                                    </div>
+                                {workers.map(worker => (
+                                    <div key={worker._id} className="bg-white rounded-[2rem] p-6 md:p-8 border border-gray-100 shadow-2xl shadow-blue-900/5 hover:translate-x-1.5 transition-all group overflow-hidden relative">
+                                        <div className="flex flex-col md:flex-row gap-6 md:gap-8 relative z-10">
+                                            {/* Avatar & Basic Info */}
+                                            <div className="flex flex-col items-center text-center md:w-40 shrink-0">
+                                                <div className="w-20 h-20 bg-blue-50 rounded-[1.5rem] flex items-center justify-center text-blue-600 mb-3 shadow-inner border border-blue-100 group-hover:scale-105 transition-transform">
+                                                    <User size={40} />
+                                                </div>
+                                                <div className="flex items-center gap-1 text-amber-500 font-black text-base mb-1 bg-amber-50 px-2.5 py-1 rounded-full">
+                                                    <Star size={16} className="fill-current" /> {worker.rating}
+                                                </div>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{worker.experience} Exp.</p>
+                                            </div>
+
+                                            {/* Name, Category & Contact */}
+                                            <div className="flex-1">
+                                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                                                     <div>
-                                                        <h3 className="font-black text-gray-900 text-2xl mb-1">{person.name}</h3>
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold uppercase tracking-wider">
-                                                                {person.job}
+                                                        <h4 className="text-2xl font-black text-slate-900 mb-2 leading-tight">{worker.name}</h4>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-md shadow-blue-200">
+                                                                {worker.service}
                                                             </span>
-                                                            <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-2 py-1 rounded-lg">
-                                                                <Star className="w-4 h-4 fill-current" />
-                                                                {person.rating}
-                                                            </div>
+                                                            <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                                                {worker.category}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2 shrink-0">
+                                                        <a href={`tel:${worker.number}`} className="flex items-center gap-2.5 py-2.5 px-5 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg shadow-slate-200 group/btn">
+                                                            <Phone size={18} className="group-hover/btn:animate-bounce" />
+                                                            <span className="font-black tracking-tight text-sm">{worker.number}</span>
+                                                        </a>
+                                                        <div className="flex items-center gap-1 text-green-600 font-bold text-[10px] uppercase tracking-wide px-2 py-0.5 bg-green-50 rounded-lg">
+                                                            <ShieldCheck size={14} /> Verified Pro
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex flex-col gap-2 items-end">
-                                                    <div className="text-blue-700 font-black flex items-center gap-2 text-2xl">
-                                                        <Phone className="w-6 h-6" />
-                                                        {person.number}
+                                                <div className="flex items-center gap-4 py-3 border-t border-slate-50">
+                                                    <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs">
+                                                        <MapPin size={16} className="text-blue-500" /> {worker.location}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-green-600 text-sm font-bold">
-                                                        <ShieldCheck className="w-5 h-5" />
-                                                        Verified Professional
+                                                    <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs">
+                                                        <Clock size={16} className="text-blue-500" /> Active Local
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 py-6 border-y border-gray-50">
-                                                <div className="flex items-center gap-3 text-gray-600 font-medium">
-                                                    <div className="p-2 bg-gray-50 rounded-lg"><MapPin className="w-5 h-5" /></div>
-                                                    <span className="capitalize">{person.location}</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 text-gray-600 font-medium">
-                                                    <div className="p-2 bg-gray-50 rounded-lg"><Clock className="w-5 h-5" /></div>
-                                                    <span>{person.experience} experience</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Reviews Section */}
-                                            <div className="mt-8">
-                                                <h4 className="flex items-center gap-2 font-bold text-gray-900 mb-6">
-                                                    <MessageSquare className="w-5 h-5 text-blue-600" />
-                                                    Customer Reviews ({person.reviews.length})
-                                                </h4>
-
-                                                <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                                                    {person.reviews.map(review => (
-                                                        <div key={review.id} className="bg-gray-50 p-4 rounded-2xl">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className="font-bold text-gray-900 text-sm">{review.user}</span>
-                                                                <div className="flex gap-0.5">
-                                                                    {[...Array(5)].map((_, i) => (
-                                                                        <Star key={i} size={12} className={i < review.rating ? "text-amber-500 fill-current" : "text-gray-300"} />
-                                                                    ))}
+                                                {/* Reviews Section */}
+                                                <div className="mt-6 space-y-3">
+                                                    <h5 className="font-black text-slate-900 uppercase tracking-widest text-[10px] flex items-center gap-2">
+                                                        <MessageSquare size={14} className="text-blue-600" /> Customer Reviews ({worker.reviews?.length || 0})
+                                                    </h5>
+                                                    <div className="max-h-32 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                                                        {worker.reviews?.map((review, idx) => (
+                                                            <div key={idx} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 relative group/rev">
+                                                                <div className="flex justify-between items-center mb-1">
+                                                                    <span className="font-black text-slate-900 text-[10px]">{review.user}</span>
+                                                                    <div className="flex gap-0.5">
+                                                                        {[...Array(5)].map((_, i) => (
+                                                                            <Star key={i} size={8} className={i < review.rating ? "text-amber-500 fill-current" : "text-slate-200"} />
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
+                                                                <p className="text-slate-600 text-[11px] leading-relaxed font-medium">"{review.comment}"</p>
                                                             </div>
-                                                            <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Add Review Form */}
-                                                <div className="mt-6 bg-blue-50/50 p-6 rounded-2xl border border-blue-100 border-dashed">
-                                                    <p className="text-sm font-bold text-blue-900 mb-3">Rate & Review this worker</p>
-                                                    <div className="flex gap-2 mb-4">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <button
-                                                                key={star}
-                                                                onClick={() => setNewReview({ ...newReview, workerId: person.id, rating: star })}
-                                                                className="transition-transform active:scale-90"
-                                                            >
-                                                                <Star
-                                                                    size={24}
-                                                                    className={(newReview.workerId === person.id ? newReview.rating : 5) >= star ? "text-amber-500 fill-current" : "text-gray-300"}
-                                                                />
-                                                            </button>
                                                         ))}
                                                     </div>
-                                                    <div className="relative">
-                                                        <textarea
-                                                            placeholder="Share your experience with this professional..."
-                                                            value={newReview.workerId === person.id ? newReview.comment : ''}
-                                                            onChange={(e) => setNewReview({ ...newReview, workerId: person.id, comment: e.target.value })}
-                                                            className="w-full p-4 pr-12 bg-white border border-blue-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all"
-                                                            rows="2"
-                                                        />
-                                                        <button
-                                                            onClick={() => handleAddReview(person.id)}
-                                                            className="absolute right-3 bottom-3 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md"
-                                                        >
-                                                            <Send size={18} />
-                                                        </button>
+
+                                                    {/* Quick Review Input */}
+                                                    <div className="mt-4 pt-4 border-t border-dashed border-slate-200">
+                                                        <div className="flex items-center gap-1.5 mb-2.5">
+                                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                                <button
+                                                                    key={star}
+                                                                    onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
+                                                                    className="transition-transform active:scale-90"
+                                                                >
+                                                                    <Star
+                                                                        size={16}
+                                                                        className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-500 fill-current" : "text-slate-200"}
+                                                                    />
+                                                                </button>
+                                                            ))}
+                                                            <span className="text-[9px] font-black text-slate-300 uppercase ml-1 tracking-widest leading-none">Tap to rate</span>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Quick comment..."
+                                                                value={newReview.workerId === worker._id ? newReview.comment : ''}
+                                                                onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
+                                                                className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-4 focus:ring-blue-500/5 focus:bg-white outline-none font-bold placeholder:text-slate-300 transition-all"
+                                                            />
+                                                            <button
+                                                                onClick={() => handleAddReview(worker._id)}
+                                                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+                                                            >
+                                                                <Send size={12} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        {/* Background Decoration */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full translate-x-16 -translate-y-16 group-hover:bg-blue-50 transition-colors" />
                                     </div>
-                                ))
-                            ) : (
-                                <div className="py-20 text-center bg-white rounded-[3rem] border border-dashed border-gray-200">
-                                    <Search className="w-16 h-16 text-gray-200 mx-auto mb-6" />
-                                    <h3 className="text-2xl font-black text-gray-900">No matching professionals</h3>
-                                    <p className="text-gray-500 mt-2">Try adjusting your filters or resetting them.</p>
-                                    <button
-                                        onClick={() => { setSelectedLocation(''); setSelectedJob(''); setHasSearched(false); }}
-                                        className="mt-8 px-8 py-3 bg-blue-50 text-blue-600 font-black rounded-2xl hover:bg-blue-100 transition-all"
-                                    >
-                                        View All Professionals
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-32 text-center bg-white rounded-[4rem] border border-dashed border-slate-200 flex flex-col items-center">
+                                <Search className="w-24 h-24 text-slate-100 mb-8" />
+                                <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight uppercase">Nothing Found</h3>
+                                <p className="text-slate-500 max-w-sm mx-auto font-medium mb-12">
+                                    We couldn't find any professionals matching your current filters. Try different keywords or reset your search.
+                                </p>
+                                <button
+                                    onClick={() => { setSelectedLocation(''); setSelectedCategory(''); setSelectedService(''); fetchWorkers(); setHasSearched(false); }}
+                                    className="px-12 py-5 bg-slate-100 text-slate-600 font-black rounded-[2rem] hover:bg-slate-200 transition-all uppercase tracking-widest text-sm shadow-xl shadow-slate-100"
+                                >
+                                    Reset All Search
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

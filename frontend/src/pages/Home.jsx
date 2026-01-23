@@ -7,7 +7,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ToolCard from '../components/ToolCard';
-import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets, Eraser, Building2, Sparkles, Search } from 'lucide-react';
+import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets, Eraser, Building2, Sparkles, Search, QrCode } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,53 +26,18 @@ const Home = () => {
             color: 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-900/5'
         },
         {
-            title: 'Convert to PDF',
-            description: 'Convert Word, Excel, PowerPoint, and Images to PDF.',
+            title: 'QR Code Generator',
+            description: 'Convert any link into a custom QR code instantly.',
+            icon: QrCode,
+            to: '/qr-generator',
+            color: 'bg-yellow-50/50 hover:bg-yellow-50'
+        },
+        {
+            title: 'PDF Tools',
+            description: 'Convert, Compress, Protect, and Edit your PDF files in one place.',
             icon: FileText,
-            to: '/pdf-tools?mode=to-pdf',
+            to: '/pdf-tools',
             color: 'bg-indigo-50/50 hover:bg-indigo-50'
-        },
-        {
-            title: 'Compress PDF',
-            description: 'Reduce PDF file size while maintaining quality.',
-            icon: Layers,
-            to: '/pdf-tools?mode=compress',
-            color: 'bg-rose-50/50 hover:bg-rose-50'
-        },
-        {
-            title: 'Convert from PDF',
-            description: 'Convert PDF to Word, Excel, PowerPoint, and Images.',
-            icon: FileType,
-            to: '/pdf-tools?mode=from-pdf',
-            color: 'bg-blue-50/50 hover:bg-blue-50'
-        },
-        {
-            title: 'Protect PDF',
-            description: 'Encrypt your PDF with a password.',
-            icon: Lock,
-            to: '/pdf-tools?mode=protect',
-            color: 'bg-green-50/50 hover:bg-green-50'
-        },
-        {
-            title: 'Unlock PDF',
-            description: 'Remove password protection from PDF.',
-            icon: Unlock,
-            to: '/pdf-tools?mode=unlock',
-            color: 'bg-red-50/50 hover:bg-red-50'
-        },
-        {
-            title: 'Add Watermark',
-            description: 'Add text or image watermarks to your PDF.',
-            icon: Droplets,
-            to: '/watermark',
-            color: 'bg-purple-50/50 hover:bg-purple-50'
-        },
-        {
-            title: 'Remove Watermark',
-            description: 'Attempt to remove watermarks from PDF.',
-            icon: Eraser,
-            to: '/remove-watermark',
-            color: 'bg-orange-50/50 hover:bg-orange-50'
         },
         {
             title: 'Image Tools',
@@ -80,13 +45,6 @@ const Home = () => {
             icon: Image,
             to: '/image-tools',
             color: 'bg-emerald-50/50 hover:bg-emerald-50'
-        },
-        {
-            title: 'Sign PDF',
-            description: 'Sign documents electronically with visual signatures.',
-            icon: Zap,
-            to: '/esign',
-            color: 'bg-amber-50/50 hover:bg-amber-50'
         },
         {
             title: 'Local Help',
@@ -106,11 +64,10 @@ const Home = () => {
             <div className="relative isolate px-6 pt-14 lg:px-8">
                 <div className="mx-auto max-w-4xl py-20 sm:py-24 lg:py-28 text-center">
                     <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl mb-6">
-                        All-in-One <span className="text-blue-600">File Converter</span>
+                        One-Stop <span className="text-blue-600">Solution</span>
                     </h1>
                     <p className="text-xl leading-8 text-gray-600 mb-10 max-w-2xl mx-auto">
-                        Simple, fast, and secure tools to convert, compress, and edit your documents and images.
-                        Free and open-source.
+                        Your all-in-one destination for documents, images, and tools. One place to find everything you need to get the job done.
                     </p>
 
                     {/* Local Help Line: Centered integration for logged-in users */}

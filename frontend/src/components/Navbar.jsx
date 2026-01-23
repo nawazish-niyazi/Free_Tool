@@ -25,35 +25,36 @@ const Navbar = () => {
                             <span className="text-2xl font-black text-slate-900 tracking-tight">N.A.I.R <span className="text-blue-600">Solutions</span></span>
                         </Link>
 
-                        <div className="hidden md:flex space-x-8 items-center">
-                            <Link to="/" className="text-slate-600 hover:text-blue-600 font-bold transition-all">Home</Link>
-                            <Link to="/pdf-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all">PDF Tools</Link>
-                            <Link to="/image-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all">Image Tools</Link>
-                            <Link to="/invoice-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all">Invoice Generator</Link>
+                        <div className="hidden md:flex space-x-6 items-center">
+                            <Link to="/" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Home</Link>
+                            <Link to="/pdf-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">PDF Tools</Link>
+                            <Link to="/image-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Image Tools</Link>
+                            <Link to="/qr-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">QR Generator</Link>
+                            <Link to="/invoice-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Invoice Generator</Link>
                             {isLoggedIn && (
-                                <Link to="/local-help" className="text-slate-600 hover:text-blue-600 font-bold transition-all">Local Help</Link>
+                                <Link to="/local-help" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Local Help</Link>
                             )}
 
-                            <div className="h-6 w-px bg-slate-200 mx-2" />
+                            <div className="h-6 w-px bg-slate-200 mx-1" />
 
                             {isLoggedIn ? (
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100">
-                                        <UserIcon size={18} />
-                                        <span className="font-black text-sm">{user?.name}</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 max-w-[150px]">
+                                        <UserIcon size={16} className="shrink-0" />
+                                        <span className="font-bold text-xs lg:text-sm truncate">{user?.name}</span>
                                     </div>
                                     <button
                                         onClick={() => setShowLogoutConfirm(true)}
-                                        className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
                                         title="Logout"
                                     >
-                                        <LogOut size={22} />
+                                        <LogOut size={20} />
                                     </button>
                                 </div>
                             ) : (
                                 <button
                                     onClick={() => setShowAuthModal(true)}
-                                    className="px-6 py-2.5 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:-translate-y-0.5 shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                                    className="px-5 py-2 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:-translate-y-0.5 shadow-lg shadow-blue-200 active:scale-95 transition-all whitespace-nowrap"
                                 >
                                     Sign In
                                 </button>

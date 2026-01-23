@@ -49,12 +49,40 @@ const eSignRoutes = require('./routes/eSignRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const authRoutes = require('./routes/authRoutes');
 const imageRoutes = require('./routes/imageRoutes');
+const qrRoutes = require('./routes/qrRoutes');
+const localHelpRoutes = require('./routes/localHelpRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const logEvent = require('./utils/logger');
+
+// Global Analytics Middleware
+app.use((req, res, next) => {
+    // Only log API calls for tools (not health checks or static files)
+    if (req.path.startsWith('/api/') && !req.path.includes('/admin') && !req.path.includes('/auth/status')) {
+        let event = null;
+        if (req.path.includes('/pdf/compress')) event = 'PDF_COMPRESS';
+        else if (req.path.includes('/pdf/convert-to-pdf')) event = 'PDF_CONVERT';
+        else if (req.path.includes('/pdf/protect')) event = 'PDF_PROTECT';
+        else if (req.path.includes('/pdf/unlock')) event = 'PDF_UNLOCK';
+        else if (req.path.includes('/image/bg-remove')) event = 'IMAGE_BG_RETOUCH';
+        else if (req.path.includes('/qr/generate')) event = 'QR_GENERATE';
+        else if (req.path.includes('/invoice/generate')) event = 'INVOICE_GENERATE';
+        else if (req.path === '/api/local-help/professionals') event = 'LOCAL_HELP_SEARCH';
+
+        if (event && req.method !== 'OPTIONS') {
+            logEvent(event, { method: req.method });
+        }
+    }
+    next();
+});
 
 app.use('/api/pdf', pdfRoutes); // Logic for PDF tools (convert, compress, etc.)
 app.use('/api/esign', eSignRoutes); // Logic for digital signatures
 app.use('/api/invoice', invoiceRoutes); // Logic for generating invoices
 app.use('/api/auth', authRoutes); // Logic for users and authentication
 app.use('/api/image', imageRoutes); // New: Logic for image processing
+app.use('/api/qr', qrRoutes); // New: Logic for QR code generation
+app.use('/api/local-help', localHelpRoutes); // New: Logic for local help line
+app.use('/api/admin', adminRoutes); // New: Secure Admin Panel logic
 
 /**
  * Error Handler: If something goes wrong anywhere in the code,
