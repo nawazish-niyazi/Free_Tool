@@ -4,6 +4,7 @@ import UploadBox from '../components/UploadBox';
 import axios from 'axios';
 import { FileDown, Loader2, Image as ImageIcon, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const BackgroundRemoval = () => {
     const { isLoggedIn, setShowAuthModal } = useAuth();
@@ -30,7 +31,7 @@ const BackgroundRemoval = () => {
         formData.append('file', file);
 
         try {
-            const res = await axios.post('http://localhost:5000/api/image/remove-bg', formData, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/image/remove-bg`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -55,7 +56,7 @@ const BackgroundRemoval = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/image/download/${processedFilename}`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/image/download/${processedFilename}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
             });
@@ -142,7 +143,7 @@ const BackgroundRemoval = () => {
 
                                 <div className="bg-[#f0f0f0] bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:20px_20px] rounded-3xl p-8 border border-slate-200 mb-10 inline-block w-full max-w-2xl">
                                     <img
-                                        src={`http://localhost:5000/temp/${processedFilename}`}
+                                        src={`${import.meta.env.VITE_API_URL.replace('/api', '/temp')}/${processedFilename}`}
                                         alt="Processed"
                                         className="max-w-full max-h-96 object-contain mx-auto drop-shadow-2xl"
                                     />
@@ -188,6 +189,11 @@ const BackgroundRemoval = () => {
                     ))}
                 </div>
             </div>
+            <ProcessingOverlay
+                isOpen={loading}
+                message="AI is removing background..."
+                submessage="Our neural network is identifying the subject"
+            />
         </div>
     );
 };

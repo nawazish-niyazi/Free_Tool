@@ -24,8 +24,8 @@ const InvoiceHistory = () => {
         setLoading(true);
         setError(null);
         try {
-            console.log('Fetching recent invoices from: http://localhost:5000/api/invoice/recent');
-            const response = await axios.get('http://localhost:5000/api/invoice/recent');
+            console.log(`Fetching recent invoices from: ${import.meta.env.VITE_API_URL}/invoice/recent`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/invoice/recent`);
             console.log('Recent invoices response:', response.data);
 
             if (response.data && response.data.success) {
@@ -58,7 +58,7 @@ const InvoiceHistory = () => {
         setLoading(true);
         try {
             console.log(`Searching for: ${query}`);
-            const response = await axios.get(`http://localhost:5000/api/invoice/search?query=${query}`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/invoice/search?query=${query}`);
             console.log('Search response:', response.data);
 
             if (response.data && response.data.success) {
@@ -129,15 +129,15 @@ const InvoiceHistory = () => {
                     </button>
                 </div>
             ) : invoices.length > 0 ? (
-                <div className="overflow-x-auto -mx-8">
-                    <table className="w-full text-left">
+                <div className="overflow-x-auto -mx-4 sm:-mx-8">
+                    <table className="min-w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 border-y border-slate-100">
-                                <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Invoice #</th>
-                                <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Client Name</th>
-                                <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date Issued</th>
-                                <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Grand Total</th>
-                                <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th className="px-4 sm:px-8 py-5 text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Invoice #</th>
+                                <th className="px-4 sm:px-8 py-5 text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Client</th>
+                                <th className="hidden md:table-cell px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date Issued</th>
+                                <th className="px-4 sm:px-8 py-5 text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest text-right">Grand Total</th>
+                                <th className="hidden sm:table-cell px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -149,29 +149,29 @@ const InvoiceHistory = () => {
                                     onClick={() => setSelectedInvoice(inv)}
                                     className="hover:bg-blue-50/50 transition-all group cursor-pointer"
                                 >
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-slate-100 rounded-lg text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                                                <FileText size={18} />
+                                    <td className="px-4 sm:px-8 py-6">
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="shrink-0 p-1.5 sm:p-2 bg-slate-100 rounded-lg text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                                                <FileText size={16} className="sm:w-[18px] sm:h-[18px]" />
                                             </div>
                                             <div>
-                                                <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors">#{inv.invoiceNumber}</div>
-                                                <div className="text-[10px] text-slate-400 mt-1 font-mono uppercase font-bold tracking-tight">ID: {inv.invoiceID.split('-')[0]}...</div>
+                                                <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors text-xs sm:text-sm">#{inv.invoiceNumber}</div>
+                                                <div className="hidden sm:block text-[10px] text-slate-400 mt-1 font-mono uppercase font-bold tracking-tight">ID: {inv.invoiceID.split('-')[0]}...</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                                                <UserCircle size={22} />
+                                    <td className="px-4 sm:px-8 py-6">
+                                        <div className="flex items-center gap-2 sm:gap-3">
+                                            <div className="hidden sm:flex w-8 sm:w-10 h-8 sm:h-10 rounded-xl bg-indigo-50 border border-indigo-100 items-center justify-center text-indigo-600 shadow-sm">
+                                                <UserCircle size={22} className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" />
                                             </div>
                                             <div>
-                                                <div className="text-sm font-black text-slate-800">{inv.client.name}</div>
-                                                <div className="text-xs text-slate-500 font-medium">{inv.client.email || 'No email provided'}</div>
+                                                <div className="text-[10px] sm:text-sm font-black text-slate-800">{inv.client.name}</div>
+                                                <div className="hidden md:block text-xs text-slate-500 font-medium">{inv.client.email || 'No email provided'}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="hidden md:table-cell px-8 py-6">
                                         <div className="flex items-center gap-2 text-sm text-slate-600 font-bold">
                                             <Calendar size={14} className="text-slate-400" />
                                             {inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
@@ -291,6 +291,7 @@ const InvoiceHistory = () => {
                                             <p className="text-slate-500 text-sm font-medium leading-relaxed whitespace-pre-line">{selectedInvoice.client.address}</p>
                                             <div className="mt-4 text-sm font-bold text-slate-700">
                                                 <p>{selectedInvoice.client.email}</p>
+                                                {selectedInvoice.client.phone && <p>{selectedInvoice.client.phone}</p>}
                                             </div>
                                         </div>
                                     </div>
@@ -314,6 +315,12 @@ const InvoiceHistory = () => {
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
                                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-black rounded-md">{selectedInvoice.status}</span>
                                     </div>
+                                    {selectedInvoice.paymentMode && (
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Payment Mode</p>
+                                            <p className="text-sm font-black text-slate-900">{selectedInvoice.paymentMode}</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Items Table */}
@@ -326,7 +333,7 @@ const InvoiceHistory = () => {
                                         <table className="w-full text-left">
                                             <thead className="bg-slate-50">
                                                 <tr>
-                                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+                                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Name</th>
                                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Qty</th>
                                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Price</th>
                                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total</th>

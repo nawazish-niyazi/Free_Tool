@@ -9,6 +9,7 @@ import UploadBox from '../components/UploadBox';
 import axios from 'axios';
 import { FileDown, Loader2, Type, Image as ImageIcon, Droplet, RotateCw, Maximize2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const WatermarkPage = () => {
     const { isLoggedIn, setShowAuthModal } = useAuth();
@@ -70,7 +71,7 @@ const WatermarkPage = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/pdf/watermark', formData);
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/watermark`, formData);
             if (response.data.success) {
                 setProcessedFilename(response.data.filename);
             }
@@ -95,7 +96,7 @@ const WatermarkPage = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/pdf/download/${processedFilename}`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/pdf/download/${processedFilename}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
             });
@@ -264,6 +265,11 @@ const WatermarkPage = () => {
                     )}
                 </div>
             </div>
+            <ProcessingOverlay
+                isOpen={loading}
+                message="Adding Watermark..."
+                submessage="Embedding digital overlay on each page"
+            />
         </div>
     );
 };

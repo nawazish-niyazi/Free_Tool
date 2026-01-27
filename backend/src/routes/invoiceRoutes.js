@@ -60,6 +60,7 @@ router.post('/generate', protect, upload.single('logo'), async (req, res) => {
                 })),
                 totals: data.totals,
                 notes: data.notes,
+                paymentMode: data.paymentMode,
                 pdfPath: data.pdfPath
             });
 

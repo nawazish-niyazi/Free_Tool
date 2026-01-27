@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import Draggable from 'react-draggable';
 import { useDropzone } from 'react-dropzone';
-import { Settings, PenTool, Download, X, UploadCloud, Type, Trash2, CheckCircle } from 'lucide-react';
+import { Settings, PenTool, Download, X, UploadCloud, Type, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import ProcessingOverlay from '../components/ProcessingOverlay';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -121,7 +122,7 @@ export default function ESignPage() {
             formData.append('file', uploadedFile);
 
             try {
-                const res = await axios.post('http://localhost:5000/api/esign/upload', formData);
+                const res = await axios.post(`${import.meta.env.VITE_API_URL}/esign/upload`, formData);
                 setFile(uploadedFile);
                 setServerFilename(res.data.file.filename);
                 setSignatures([]);
@@ -177,7 +178,7 @@ export default function ESignPage() {
                 }))
             };
 
-            const res = await axios.post('http://localhost:5000/api/esign/sign', payload);
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/esign/sign`, payload);
             if (res.data.success) {
                 setDownloadUrl(res.data.downloadUrl);
             }
@@ -197,7 +198,7 @@ export default function ESignPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000${downloadUrl}`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL.replace('/api', '')}${downloadUrl}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
             });
@@ -218,7 +219,7 @@ export default function ESignPage() {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col">
             <Navbar />
-            <div className="p-8 flex flex-col items-center flex-1 w-full">
+            <div className="p-8 flex flex-col items-center flex-1 w-full relative">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-8">
                     Electronic Signature
                 </h1>
@@ -258,45 +259,53 @@ export default function ESignPage() {
                 ) : (
                     <div className="w-full max-w-7xl flex gap-6 items-start h-[calc(100vh-200px)]">
                         <div className="w-64 bg-white p-6 rounded-xl shadow-lg space-y-4 h-full flex flex-col border border-gray-100">
-                            <h3 className="font-semibold text-gray-800">Tools</h3>
-                            <button onClick={() => setIsModalOpen(true)} className={`${BUTTON_CLASS} w-full justify-center shadow-md`}>
+                            <h3 className="font-semibold text-gray-800 border-b pb-2 text-sm uppercase tracking-wider">Tools</h3>
+                            <button onClick={() => setIsModalOpen(true)} className={`${BUTTON_CLASS} w-full justify-center shadow-md py-3 rounded-xl`}>
                                 <PenTool size={18} /> Add Signature
                             </button>
 
-                            <div className="flex-1 mt-4 border-t pt-4 overflow-auto">
-                                <h3 className="font-semibold text-gray-800 mb-2">Signatures</h3>
+                            <div className="flex-1 mt-4 border-t pt-4 overflow-auto custom-scrollbar">
+                                <h3 className="font-semibold text-gray-800 mb-2 text-sm uppercase tracking-wider">Signatures</h3>
                                 {signatures.length === 0 && <p className="text-xs text-gray-400 italic">No signatures added yet.</p>}
                                 {signatures.map((sig, i) => (
-                                    <div key={sig.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded mb-2 border">
-                                        <span>Sig #{i + 1}</span>
-                                        <button onClick={() => removeSignature(sig.id)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+                                    <div key={sig.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg mb-2 border border-gray-200">
+                                        <span className="font-bold">Sig #{i + 1}</span>
+                                        <button onClick={() => removeSignature(sig.id)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"><Trash2 size={14} /></button>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="border-t pt-4 mt-auto">
-                                <p className="text-sm text-gray-600 mb-2">Pages: {numPages || '-'}</p>
-                                <button onClick={handleFinish} disabled={signing} className={`${BUTTON_CLASS} w-full justify-center bg-green-600 hover:bg-green-700 shadow-md disabled:opacity-50`}>
+                            <div className="border-t pt-4 mt-auto space-y-4">
+                                <div className="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    <span>Pages</span>
+                                    <span className="bg-slate-100 px-2 py-0.5 rounded-md text-slate-700">{numPages || '-'}</span>
+                                </div>
+                                <button onClick={handleFinish} disabled={signing} className={`${BUTTON_CLASS} w-full justify-center bg-green-600 hover:bg-green-700 shadow-md disabled:opacity-50 py-3 rounded-xl`}>
                                     {signing ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
                                     Finish & Sign
                                 </button>
-                                <button onClick={() => setFile(null)} className="w-full text-red-500 text-sm mt-4 hover:underline text-center">
+                                <button onClick={() => setFile(null)} className="w-full text-red-500 text-sm hover:underline text-center font-bold">
                                     Cancel
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 bg-gray-200/50 rounded-xl p-8 h-full flex justify-center overflow-auto relative border border-gray-300 shadow-inner">
+                        <div className="flex-1 bg-gray-200/50 rounded-xl p-8 h-full flex justify-center overflow-auto relative border border-gray-300 shadow-inner custom-scrollbar">
                             <Document
                                 file={file}
                                 onLoadSuccess={onDocumentLoadSuccess}
                                 className="shadow-2xl"
-                                loading={<div className="text-center p-4">Loading PDF...</div>}
+                                loading={
+                                    <div className="flex flex-col items-center justify-center p-20 text-slate-400">
+                                        <Loader2 className="animate-spin mb-4" size={40} />
+                                        <p className="font-bold uppercase tracking-widest text-xs">Loading PDF View...</p>
+                                    </div>
+                                }
                             >
                                 {numPages && Array.from(new Array(numPages), (el, index) => {
                                     const dims = pageDimensions[index];
                                     return (
-                                        <div key={`page_${index + 1}`} className="relative mb-8 bg-white shadow-md">
+                                        <div key={`page_${index + 1}`} className="relative mb-8 bg-white shadow-md rounded-sm overflow-hidden">
                                             <Page
                                                 pageNumber={index + 1}
                                                 width={800}
@@ -332,6 +341,12 @@ export default function ESignPage() {
                     />
                 )}
             </div>
+
+            <ProcessingOverlay
+                isOpen={signing}
+                message="Applying Signatures..."
+                submessage="Embedding digital identity and rebuilding PDF structure"
+            />
         </div>
     );
 }
@@ -364,6 +379,7 @@ const SignatureModal = ({ onClose, onSave }) => {
         ctx.strokeStyle = selectedColor;
         setIsDrawing(true);
     };
+
     const draw = (e) => {
         if (!isDrawing) return;
         const ctx = canvasRef.current.getContext('2d');
@@ -372,6 +388,7 @@ const SignatureModal = ({ onClose, onSave }) => {
         ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
         ctx.stroke();
     };
+
     const stopDrawing = () => setIsDrawing(false);
 
     const handleApply = () => {
@@ -407,62 +424,95 @@ const SignatureModal = ({ onClose, onSave }) => {
                 {selectedFont === fontName && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />}
             </div>
             <span style={{ fontFamily: fontName, color: selectedColor, fontSize: '2rem' }}>
-                {(activeTab === 'initials' ? initials : fullName) || 'Sample'}
+                {(activeTab === 'initials' ? initials : fullName) || 'Sample Signature'}
             </span>
         </div>
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-[800px] flex flex-col overflow-hidden max-h-[90vh]">
-                <div className="p-6 border-b flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Set your signature details</h2>
-                    <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-gray-600" /></button>
-                </div>
-                <div className="p-6 bg-gray-50 grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+            <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-4xl flex flex-col overflow-hidden max-h-[90vh]">
+                <div className="p-8 border-b flex justify-between items-center bg-slate-50/50">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Full name:</label>
-                        <input type="text" className="w-full p-2 border rounded-md" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Type name" />
+                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Set Signature Details</h2>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Choose how you want to represent yourself</p>
                     </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Initials:</label>
-                        <input type="text" className="w-full p-2 border rounded-md" value={initials} onChange={e => setInitials(e.target.value)} placeholder="Type initials" />
+                    <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm"><X size={24} className="text-slate-400 hover:text-red-500" /></button>
+                </div>
+
+                <div className="p-8 bg-slate-100/50 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                        <input type="text" className="w-full px-5 py-3.5 bg-white border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold placeholder:font-normal placeholder:text-slate-300" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Type name..." />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Initials</label>
+                        <input type="text" className="w-full px-5 py-3.5 bg-white border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold placeholder:font-normal placeholder:text-slate-300" value={initials} onChange={e => setInitials(e.target.value)} placeholder="Initials..." />
                     </div>
                 </div>
-                <div className="flex border-b px-6 pt-2 gap-4">
-                    <button onClick={() => { setActiveTab('signature'); setMode('type'); }} className={`pb-2 border-b-2 flex gap-2 items-center ${activeTab === 'signature' ? 'border-red-500 text-black' : 'border-transparent text-gray-500'}`}><PenTool size={16} /> Signature</button>
-                    <button onClick={() => { setActiveTab('initials'); setMode('type'); }} className={`pb-2 border-b-2 flex gap-2 items-center ${activeTab === 'initials' ? 'border-red-500 text-black' : 'border-transparent text-gray-500'}`}><Type size={16} /> Initials</button>
-                    <button onClick={() => { setActiveTab('stamp'); setMode('upload'); }} className={`pb-2 border-b-2 flex gap-2 items-center ${activeTab === 'stamp' ? 'border-red-500 text-black' : 'border-transparent text-gray-500'}`}>Company Stamp</button>
+
+                <div className="flex border-b px-8 bg-white gap-8 pt-4">
+                    <button onClick={() => { setActiveTab('signature'); setMode('type'); }} className={`pb-4 border-b-4 flex gap-2 items-center text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'signature' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}><PenTool size={16} /> Signature</button>
+                    <button onClick={() => { setActiveTab('initials'); setMode('type'); }} className={`pb-4 border-b-4 flex gap-2 items-center text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'initials' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}><Type size={16} /> Initials</button>
+                    <button onClick={() => { setActiveTab('stamp'); setMode('upload'); }} className={`pb-4 border-b-4 flex gap-2 items-center text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stamp' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'}`}>Company Stamp</button>
                 </div>
-                <div className="flex flex-1 min-h-[350px]">
-                    <div className="w-16 border-r flex flex-col items-center py-4 gap-4 bg-gray-50">
-                        <button onClick={() => setMode('type')} className={`p-2 rounded ${mode === 'type' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}><Type /></button>
-                        <button onClick={() => setMode('draw')} className={`p-2 rounded ${mode === 'draw' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}><PenTool /></button>
-                        <button onClick={() => setMode('upload')} className={`p-2 rounded ${mode === 'upload' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}><UploadCloud /></button>
+
+                <div className="flex flex-1 min-h-[400px]">
+                    <div className="w-20 border-r flex flex-col items-center py-6 gap-6 bg-slate-50/50">
+                        <button onClick={() => setMode('type')} title="Type" className={`p-3 rounded-2xl transition-all ${mode === 'type' ? 'bg-white shadow-xl text-blue-600 scale-110' : 'text-slate-400 hover:text-blue-400'}`}><Type size={24} /></button>
+                        <button onClick={() => setMode('draw')} title="Draw" className={`p-3 rounded-2xl transition-all ${mode === 'draw' ? 'bg-white shadow-xl text-blue-600 scale-110' : 'text-slate-400 hover:text-blue-400'}`}><PenTool size={24} /></button>
+                        <button onClick={() => setMode('upload')} title="Upload" className={`p-3 rounded-2xl transition-all ${mode === 'upload' ? 'bg-white shadow-xl text-blue-600 scale-110' : 'text-slate-400 hover:text-blue-400'}`}><UploadCloud size={24} /></button>
                     </div>
-                    <div className="flex-1 p-8 flex flex-col">
-                        <div className="flex-1 overflow-auto">
-                            {mode === 'type' && <div className="space-y-4">{fonts.map(f => renderPreview(f.name))}</div>}
+
+                    <div className="flex-1 p-10 flex flex-col bg-slate-50/30">
+                        <div className="flex-1 overflow-auto custom-scrollbar">
+                            {mode === 'type' && <div className="space-y-4 pr-4">{fonts.map(f => renderPreview(f.name))}</div>}
                             {mode === 'draw' && (
-                                <div className="border-2 border-dashed h-64 rounded-lg relative bg-white">
-                                    <canvas ref={canvasRef} width={600} height={250} className="w-full h-full cursor-crosshair" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
-                                    <button onClick={() => canvasRef.current.getContext('2d').clearRect(0, 0, 600, 250)} className="absolute top-2 right-2 text-xs bg-gray-100 border px-2 py-1 rounded">Clear</button>
+                                <div className="bg-white border-2 border-dashed border-slate-200 h-72 rounded-[32px] relative group overflow-hidden shadow-inner">
+                                    <canvas ref={canvasRef} width={600} height={280} className="w-full h-full cursor-crosshair" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing} />
+                                    <button onClick={() => canvasRef.current.getContext('2d').clearRect(0, 0, 600, 280)} className="absolute top-4 right-4 text-[10px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-500 px-4 py-2 rounded-xl transition-all">Clear Board</button>
                                 </div>
                             )}
                             {mode === 'upload' && (
-                                <div className="border-2 border-dashed h-64 rounded-lg flex flex-col items-center justify-center relative bg-white">
-                                    {!uploadedImage ? <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded">Select Image <input type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = ev => setUploadedImage(ev.target.result); r.readAsDataURL(f); } }} /></label> : <><img src={uploadedImage} className="max-h-full max-w-full object-contain" /><button onClick={() => setUploadedImage(null)} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"><X size={16} /></button></>}
+                                <div className="bg-white border-2 border-dashed border-slate-200 h-72 rounded-[32px] flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+                                    {!uploadedImage ? (
+                                        <label className="cursor-pointer group flex flex-col items-center">
+                                            <div className="p-5 bg-blue-50 text-blue-600 rounded-3xl mb-4 group-hover:scale-110 transition-transform"><UploadCloud size={32} /></div>
+                                            <span className="text-sm font-bold text-slate-500">Select Image Signature</span>
+                                            <input type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = ev => setUploadedImage(ev.target.result); r.readAsDataURL(f); } }} />
+                                        </label>
+                                    ) : (
+                                        <>
+                                            <img src={uploadedImage} className="max-h-full max-w-full object-contain p-8" alt="Signature preview" />
+                                            <button onClick={() => setUploadedImage(null)} className="absolute top-4 right-4 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"><X size={18} /></button>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
-                        <div className="mt-4 pt-4 border-t flex items-center gap-4">
-                            <span>Color:</span>
-                            {colors.map(c => <button key={c} onClick={() => setSelectedColor(c)} className={`w-6 h-6 rounded-full ${selectedColor === c ? 'ring-2 ring-blue-500 scale-110' : ''}`} style={{ backgroundColor: c }} />)}
+
+                        <div className="mt-8 pt-8 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ink Color</span>
+                                <div className="flex gap-3">
+                                    {colors.map(c => (
+                                        <button
+                                            key={c}
+                                            onClick={() => setSelectedColor(c)}
+                                            className={`w-8 h-8 rounded-full border-4 border-white shadow-md transition-all ${selectedColor === c ? 'scale-125 ring-2 ring-blue-500' : 'hover:scale-110'}`}
+                                            style={{ backgroundColor: c }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleApply}
+                                className="px-12 py-4 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-slate-200 transition-all uppercase tracking-widest text-sm"
+                            >
+                                Apply Signature
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div className="p-4 border-t flex justify-end">
-                    <button onClick={handleApply} className="bg-red-600 text-white px-8 py-2 rounded hover:bg-red-700">Apply</button>
                 </div>
             </div>
         </div>

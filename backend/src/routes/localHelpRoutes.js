@@ -9,13 +9,19 @@ const { protect } = require('../middleware/auth');
 router.get('/professionals', protect, async (req, res) => {
     try {
         const { location, category, service } = req.query;
-        let query = {};
+        let query = { status: 'approved' }; // Only show approved professionals
 
-        if (location) query.location = location;
-        if (category) query.category = category;
-        if (service) query.service = service;
+        // Case-insensitive matching for filters
+        if (location) query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+        if (category) query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+        if (service) query.service = { $regex: new RegExp(`^${service}$`, 'i') };
+
+        console.log('Query filters:', { location, category, service });
+        console.log('MongoDB query:', JSON.stringify(query, null, 2));
 
         const professionals = await Professional.find(query);
+        console.log(`Found ${professionals.length} professionals`);
+
         res.json({ success: true, count: professionals.length, data: professionals });
     } catch (err) {
         console.error(err);
@@ -163,6 +169,55 @@ router.post('/seed', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Seed Error' });
+    }
+});
+
+// @route   POST api/local-help/worker-signup
+// @desc    Worker signup (Public - No Auth Required)
+// @access  Public
+router.post('/worker-signup', async (req, res) => {
+    try {
+        const { name, number, location, category, service, experience } = req.body;
+
+        // Validate required fields
+        if (!name || !number || !location || !category || !service || !experience) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        // Check if phone number already exists
+        const existingWorker = await Professional.findOne({ number });
+        if (existingWorker) {
+            return res.status(400).json({
+                success: false,
+                message: 'You have already registered with this phone number.'
+            });
+        }
+
+        // Create pending professional record
+        const newWorker = await Professional.create({
+            name,
+            number,
+            location,
+            category,
+            service,
+            experience,
+            status: 'pending',
+            verified: false,
+            rating: 0,
+            reviews: []
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Your request has been submitted. Our team will review and contact you.',
+            data: newWorker
+        });
+    } catch (err) {
+        console.error('Worker Signup Error:', err);
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 });
 

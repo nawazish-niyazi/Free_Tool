@@ -33,7 +33,8 @@ const InvoiceSchema = new mongoose.Schema({
     client: {
         name: String,
         address: String,
-        email: String
+        email: String,
+        phone: String
     },
     items: [{
         description: String,
@@ -50,6 +51,7 @@ const InvoiceSchema = new mongoose.Schema({
         grandTotal: Number
     },
     notes: String,
+    paymentMode: String,
     pdfPath: String,
     createdAt: {
         type: Date,

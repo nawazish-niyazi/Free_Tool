@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const Navbar = () => {
     const { isLoggedIn, user, logout, setShowAuthModal } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -44,7 +45,9 @@ const Navbar = () => {
                                         <span className="font-bold text-xs lg:text-sm truncate">{user?.name}</span>
                                     </div>
                                     <button
-                                        onClick={() => setShowLogoutConfirm(true)}
+                                        onClick={() => {
+                                            setShowLogoutConfirm(true);
+                                        }}
                                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
                                         title="Logout"
                                     >
@@ -60,8 +63,78 @@ const Navbar = () => {
                                 </button>
                             )}
                         </div>
+
+                        {/* Mobile Menu Button */}
+                        <div className="md:hidden flex items-center gap-4">
+                            {isLoggedIn && (
+                                <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 max-w-[100px]">
+                                    <UserIcon size={14} className="shrink-0" />
+                                    <span className="font-bold text-[10px] truncate">{user?.name?.split(' ')[0]}</span>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                            >
+                                {isMenuOpen ? <X size={24} /> : (
+                                    <div className="space-y-1.5">
+                                        <div className="w-6 h-0.5 bg-slate-900 rounded-full" />
+                                        <div className="w-4 h-0.5 bg-slate-900 rounded-full" />
+                                        <div className="w-6 h-0.5 bg-slate-900 rounded-full" />
+                                    </div>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="md:hidden bg-white border-t border-slate-50 overflow-hidden"
+                        >
+                            <div className="px-4 py-6 space-y-4">
+                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Home</Link>
+                                <Link to="/pdf-tools" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">PDF Tools</Link>
+                                <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Image Tools</Link>
+                                <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">QR Generator</Link>
+                                <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Invoice Generator</Link>
+                                {isLoggedIn && (
+                                    <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Local Help</Link>
+                                )}
+
+                                <div className="pt-4 border-t border-slate-50">
+                                    {isLoggedIn ? (
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                setShowLogoutConfirm(true);
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-red-50 text-red-600 font-black rounded-2xl hover:bg-red-100 transition-all"
+                                        >
+                                            <LogOut size={20} />
+                                            Sign Out
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setIsMenuOpen(false);
+                                                setShowAuthModal(true);
+                                            }}
+                                            className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                                        >
+                                            Sign In
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </nav>
 
             {/* Logout Confirmation Modal */}

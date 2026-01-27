@@ -37,6 +37,7 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
         issueDate,
         dueDate,
         notes,
+        paymentMode,
     } = invoiceData;
 
     // We need at least one item to make an invoice
@@ -93,6 +94,7 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
         issueDate: formattedIssueDate,
         dueDate: formattedDueDate,
         notes,
+        paymentMode,
         formatCurrency,
         status: 'Generated'
     };
@@ -144,6 +146,7 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
                 items: normalizedItems,
                 totals,
                 notes,
+                paymentMode,
                 pdfPath: outputPath
             }
         };

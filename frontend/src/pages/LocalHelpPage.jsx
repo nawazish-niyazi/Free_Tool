@@ -4,11 +4,16 @@ import Navbar from '../components/Navbar';
 import { Search, MapPin, Briefcase, Phone, User, Star, ShieldCheck, Clock, MessageSquare, Send, ChevronRight, Lock, Loader2, Sparkles, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const CATEGORIES = [
     {
         name: "House Needs",
         services: ["Electrician", "Plumber", "Carpenter", "Carpenter with Supplies", "Painter", "House Help", "Gardener", "Water Supply", "Lock and Key", "AC Repair", "RO Repair", "Garbage Collector"]
+    },
+    {
+        name: "Construction",
+        services: ["Reja", "Mistri", "Contractor", "Construction Worker", "Tiles Mistri", "Centering Worker"]
     },
     {
         name: "Food & Help",
@@ -56,11 +61,11 @@ const CATEGORIES = [
     },
     {
         name: "Caterers & Tent",
-        services: ["Catering", "Tent", "Catering + Tent", "Transgender Help"]
+        services: ["Catering", "Tent", "Catering + Tent"]
     },
     {
-        name: "Others",
-        services: ["Construction Worker", "Donation & Recycling"]
+        name: "Miscellaneous",
+        services: ["Transgender Help", "Donation & Recycling"]
     }
 ];
 
@@ -86,7 +91,7 @@ const LocalHelpPage = () => {
             if (selectedCategory) params.category = selectedCategory;
             if (selectedService) params.service = selectedService;
 
-            const res = await axios.get('http://localhost:5000/api/local-help/professionals', { params });
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/local-help/professionals`, { params });
             if (res.data.success) {
                 setWorkers(res.data.data);
             }
@@ -106,7 +111,7 @@ const LocalHelpPage = () => {
         if (!newReview.comment.trim()) return;
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/local-help/review/${workerId}`, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/local-help/review/${workerId}`, {
                 rating: newReview.rating,
                 comment: newReview.comment
             });
@@ -126,7 +131,7 @@ const LocalHelpPage = () => {
         if (!window.confirm("This will reset and seed new professionals data. Continue?")) return;
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/local-help/seed');
+            await axios.post(`${import.meta.env.VITE_API_URL}/local-help/seed`);
             fetchWorkers();
             alert("Data seeded successfully!");
         } catch (err) {
@@ -423,6 +428,12 @@ const LocalHelpPage = () => {
                     </div>
                 </div>
             </div>
+
+            <ProcessingOverlay
+                isOpen={loading}
+                message="Scanning Local Directory..."
+                submessage="Finding the best professionals in your selected area"
+            />
         </div>
     );
 };

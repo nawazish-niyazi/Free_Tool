@@ -208,3 +208,46 @@ exports.deleteMultiLink = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// @desc    Get pending worker signups
+exports.getPendingWorkers = async (req, res) => {
+    try {
+        const pendingWorkers = await Professional.find({ status: 'pending' }).sort({ createdAt: -1 });
+        res.json({ success: true, count: pendingWorkers.length, data: pendingWorkers });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Approve or reject worker signup
+exports.updateWorkerStatus = async (req, res) => {
+    try {
+        const { status } = req.body; // 'approved' or 'rejected'
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const worker = await Professional.findByIdAndUpdate(
+            req.params.id,
+            {
+                status,
+                verified: status === 'approved' ? true : false
+            },
+            { new: true }
+        );
+
+        if (!worker) {
+            return res.status(404).json({ success: false, message: 'Worker not found' });
+        }
+
+        res.json({
+            success: true,
+            message: `Worker ${status} successfully`,
+            data: worker
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+

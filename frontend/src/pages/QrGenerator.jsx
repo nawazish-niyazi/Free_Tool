@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
 import Navbar from '../components/Navbar';
-import { QrCode, Download, Link as LinkIcon, RefreshCw, Loader2, Settings2, Palette, Plus, Trash2, List } from 'lucide-react';
+import { QrCode, Download, Link as LinkIcon, RefreshCw, Loader2, Settings2, Palette, Plus, Trash2, List, Image as ImageIcon, LogIn, PlusCircle, X, Smartphone, ExternalLink, Save, Plus as PlusIcon, CheckCircle2, Pencil } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const QrGenerator = () => {
-    const { isLoggedIn, setShowAuthModal } = useAuth();
+    const { isLoggedIn, user, setShowAuthModal } = useAuth();
     const [url, setUrl] = useState('');
     const [qrDataUrl, setQrDataUrl] = useState('');
     const [loading, setLoading] = useState(false);
@@ -17,16 +19,25 @@ const QrGenerator = () => {
         light: '#ffffff'
     });
     const [mode, setMode] = useState('single'); // 'single' or 'multi'
-    const [multiLinks, setMultiLinks] = useState([{ name: '', url: '' }]);
+    const [multiLinks, setMultiLinks] = useState([]);
     const [multiTitle, setMultiTitle] = useState('');
     const [myQRs, setMyQRs] = useState([]);
     const [fetchLoading, setFetchLoading] = useState(false);
+    const [logo, setLogo] = useState(null);
+    const [logoPreview, setLogoPreview] = useState(null);
+    const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('qr'); // 'qr' or 'preview'
+    const [editingQrId, setEditingQrId] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [showCropModal, setShowCropModal] = useState(false);
+    const [cropShape, setCropShape] = useState('rect'); // 'rect' or 'round'
 
     const fetchMyQRs = async () => {
         if (!isLoggedIn) return;
         setFetchLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/qr/my-multi-qrs');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/qr/my-multi-qrs`);
             if (res.data.success) {
                 setMyQRs(res.data.data);
             }
@@ -39,7 +50,69 @@ const QrGenerator = () => {
 
     useEffect(() => {
         fetchMyQRs();
-    }, [isLoggedIn]);
+        fetchInvoiceLogo();
+    }, [isLoggedIn, user?.id]);
+
+    const fetchInvoiceLogo = () => {
+        const userSuffix = isLoggedIn && user?.id ? user.id : 'guest';
+        const businessKey = `invoice_business_info_${userSuffix}`;
+        const savedData = localStorage.getItem(businessKey);
+
+        if (isLoggedIn && savedData) {
+            const parsedData = JSON.parse(savedData);
+            if (parsedData.logo) {
+                setLogoPreview(parsedData.logo);
+                setLogo(parsedData.logo);
+                setImageToCrop(parsedData.logo);
+            } else {
+                setLogoPreview(null);
+                setLogo(null);
+            }
+        } else {
+            // Clear if not logged in or no data found
+            setLogoPreview(null);
+            setLogo(null);
+            setImageToCrop(null);
+        }
+    };
+
+    const handleLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageToCrop(reader.result);
+                setShowCropModal(true);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    useEffect(() => {
+        if (mode === 'single' && url) {
+            const timer = setTimeout(() => {
+                generateQr();
+            }, 800);
+            return () => clearTimeout(timer);
+        } else if (mode === 'multi' && url && qrDataUrl) {
+            // Regeneration purely for options (color/size)
+            generateQrImageData(url);
+        }
+    }, [url, options, mode]);
+
+    const generateQrImageData = async (urlToUse) => {
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/qr/generate`, {
+                url: urlToUse.startsWith('http') ? urlToUse : `https://${urlToUse}`,
+                options
+            });
+            if (res.data.success) {
+                setQrDataUrl(res.data.qrDataUrl);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const generateQr = async () => {
         if (mode === 'single') {
@@ -59,7 +132,7 @@ const QrGenerator = () => {
 
             setLoading(true);
             try {
-                const res = await axios.post('http://localhost:5000/api/qr/generate', {
+                const res = await axios.post(`${import.meta.env.VITE_API_URL}/qr/generate`, {
                     url: url.startsWith('http') ? url : `https://${url}`,
                     options
                 });
@@ -82,33 +155,32 @@ const QrGenerator = () => {
 
             setLoading(true);
             try {
-                // 1. Create the multi-link record
-                const multiRes = await axios.post('http://localhost:5000/api/qr/multi', {
-                    title: multiTitle,
-                    links: validLinks
-                });
+                // 1. Create or Update the multi-link record
+                let multiRes;
+                const payload = { title: multiTitle, links: validLinks, logo: logoPreview, logoShape: cropShape };
+
+                if (editingQrId) {
+                    multiRes = await axios.put(`${import.meta.env.VITE_API_URL}/qr/multi/${editingQrId}`, payload);
+                } else {
+                    multiRes = await axios.post(`${import.meta.env.VITE_API_URL}/qr/multi`, payload);
+                }
 
                 if (multiRes.data.success) {
                     const landingPageUrl = multiRes.data.url;
+                    setUrl(landingPageUrl);
 
                     // 2. Generate QR for the landing page URL
-                    const qrRes = await axios.post('http://localhost:5000/api/qr/generate', {
-                        url: landingPageUrl,
-                        options
-                    });
-
-                    if (qrRes.data.success) {
-                        setQrDataUrl(qrRes.data.qrDataUrl);
-                        // Update the 'url' state so download works correctly
-                        setUrl(landingPageUrl);
-                        fetchMyQRs(); // Refresh the list
-                    }
+                    await generateQrImageData(landingPageUrl);
+                    fetchMyQRs(); // Refresh the list
+                    setSuccessMessage(editingQrId ? 'Changes saved successfully!' : 'QR Collection created!');
+                    setTimeout(() => setSuccessMessage(''), 3000);
                 }
             } catch (err) {
                 console.error(err);
-                setError('Failed to create multi-link QR');
+                setError(err.response?.data?.message || 'Failed to save multi-link QR');
             } finally {
                 setLoading(false);
+                setActiveTab('qr');
             }
         }
     };
@@ -117,7 +189,7 @@ const QrGenerator = () => {
         if (!window.confirm('Are you sure you want to delete this QR? This will make the links inaccessible.')) return;
 
         try {
-            const res = await axios.delete(`http://localhost:5000/api/qr/multi/${id}`);
+            const res = await axios.delete(`${import.meta.env.VITE_API_URL}/qr/multi/${id}`);
             if (res.data.success) {
                 setMyQRs(myQRs.filter(qr => qr._id !== id));
                 // If currently viewing the deleted QR, clear it
@@ -134,8 +206,15 @@ const QrGenerator = () => {
 
     const addLinkField = () => {
         if (multiLinks.length < 10) {
-            setMultiLinks([...multiLinks, { name: '', url: '' }]);
+            setShowAddLinkModal(true);
+        } else {
+            alert('Maximum 10 links allowed');
         }
+    };
+
+    const handleAddLink = (newLink) => {
+        setMultiLinks([...multiLinks, newLink]);
+        setQrDataUrl(''); // Clear old QR as data changed
     };
 
     const removeLinkField = (index) => {
@@ -163,7 +242,7 @@ const QrGenerator = () => {
         setDownloadLoading(true);
         try {
             const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-            const response = await axios.post('http://localhost:5000/api/qr/download', {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/qr/download`, {
                 url: fullUrl,
                 format,
                 options
@@ -263,6 +342,12 @@ const QrGenerator = () => {
                                     </div>
 
                                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {multiLinks.length === 0 && (
+                                            <div className="text-center py-8 bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center">
+                                                <LinkIcon className="text-slate-200 mb-2" size={32} />
+                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">No links added yet</p>
+                                            </div>
+                                        )}
                                         {multiLinks.map((link, index) => (
                                             <div key={index} className="bg-slate-50 p-4 rounded-3xl border border-slate-100 relative group animate-in fade-in slide-in-from-top-2">
                                                 <button
@@ -289,6 +374,73 @@ const QrGenerator = () => {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </section>
+
+                                <section className="pt-4 border-t border-slate-50">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3">Custom Logo (Fetched from Invoice if available)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`relative group cursor-pointer ${logoPreview ? (cropShape === 'round' ? 'w-24' : 'w-fit min-w-[6rem] max-w-[12rem] px-6') : 'w-24'} h-24 border-2 border-dashed border-slate-200 ${cropShape === 'round' ? 'rounded-full' : 'rounded-3xl'} flex items-center justify-center overflow-hidden transition-all hover:border-blue-400 hover:bg-slate-50`}>
+                                            <input
+                                                type="file"
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                accept="image/*"
+                                                onChange={handleLogoChange}
+                                            />
+                                            {logoPreview ? (
+                                                <div className="relative w-full h-full flex items-center justify-center group">
+                                                    <img src={logoPreview} className="max-w-full max-h-full" alt="Logo preview" />
+
+                                                    {/* Control Overlay */}
+                                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setShowCropModal(true);
+                                                            }}
+                                                            className="p-2 bg-white text-blue-600 rounded-xl hover:scale-110 transition-transform shadow-lg"
+                                                            title="Edit/Crop Logo"
+                                                        >
+                                                            <Pencil size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setLogo(null);
+                                                                setLogoPreview(null);
+                                                                setImageToCrop(null);
+                                                            }}
+                                                            className="p-2 bg-white text-red-500 rounded-xl hover:scale-110 transition-transform shadow-lg"
+                                                            title="Remove Logo"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center text-slate-400">
+                                                    <PlusCircle size={24} className="mb-1" />
+                                                    <span className="text-[8px] font-black uppercase tracking-tighter">Add Logo</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                                {logoPreview
+                                                    ? "Logo will be displayed at the top of your landing page."
+                                                    : "Personalize your QR landing page with your business logo. We've tried to fetch it from your Invoice settings."}
+                                            </p>
+                                            {!logoPreview && (
+                                                <button
+                                                    onClick={fetchInvoiceLogo}
+                                                    className="mt-2 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                                                >
+                                                    Retry Fetching Logo
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </section>
                             </div>
@@ -334,33 +486,139 @@ const QrGenerator = () => {
                             </section>
                         </div>
 
-                        <button
-                            onClick={generateQr}
-                            disabled={loading || (mode === 'single' ? !url : multiLinks.filter(l => l.name && l.url).length === 0)}
-                            className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-3xl shadow-xl shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3 text-lg group"
-                        >
-                            {loading ? <Loader2 className="animate-spin" size={24} /> : <>Generate QR <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-500" /></>}
-                        </button>
+                        <div className="space-y-4">
+                            <button
+                                onClick={generateQr}
+                                disabled={loading || (mode === 'single' ? !url : multiLinks.length === 0)}
+                                className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-3xl shadow-xl shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3 text-lg group"
+                            >
+                                {loading ? (
+                                    <Loader2 className="animate-spin" size={24} />
+                                ) : (
+                                    <>
+                                        {editingQrId ? (
+                                            <>Save Changes <Save size={20} className="group-hover:scale-110 transition-transform" /></>
+                                        ) : (
+                                            <>Generate QR <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-500" /></>
+                                        )}
+                                    </>
+                                )}
+                            </button>
+
+                            {editingQrId && (
+                                <button
+                                    onClick={() => {
+                                        setEditingQrId(null);
+                                        setMultiTitle('');
+                                        setMultiLinks([]);
+                                        setQrDataUrl('');
+                                        setUrl('');
+                                        setError('');
+                                    }}
+                                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 text-sm"
+                                >
+                                    <PlusIcon size={16} /> Create New Collection
+                                </button>
+                            )}
+
+                            <AnimatePresence>
+                                {successMessage && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 10 }}
+                                        className="p-4 bg-green-50 text-green-700 rounded-2xl text-sm font-black flex items-center gap-2 border border-green-100"
+                                    >
+                                        <CheckCircle2 size={18} />
+                                        {successMessage}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                     {/* Right Panel: Preview & Download */}
-                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-8 flex flex-col items-center">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-6 self-start">Live Preview</label>
-
-                        <div className="aspect-square w-full max-w-[300px] bg-slate-50 rounded-3xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group shadow-inner mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
-                            {qrDataUrl ? (
-                                <img
-                                    src={qrDataUrl}
-                                    alt="QR Preview"
-                                    className="w-full h-full object-contain p-4"
-                                />
-                            ) : (
-                                <div className="text-center p-6">
-                                    <QrCode size={64} className="text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold">Enter a URL to see the QR code</p>
+                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-8 flex flex-col items-center sticky top-24">
+                        <div className="flex w-full items-center justify-between mb-8">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Preview</label>
+                            {mode === 'multi' && (
+                                <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                                    <button
+                                        onClick={() => setActiveTab('qr')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'qr' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        <QrCode size={12} className="inline mr-1" /> QR
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('preview')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        <Smartphone size={12} className="inline mr-1" /> Page
+                                    </button>
                                 </div>
                             )}
                         </div>
+
+                        {activeTab === 'qr' ? (
+                            <div className="aspect-square w-full max-w-[300px] bg-slate-50 rounded-3xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group shadow-inner mb-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
+                                {qrDataUrl ? (
+                                    <img
+                                        src={qrDataUrl}
+                                        alt="QR Preview"
+                                        className="w-full h-full object-contain p-4"
+                                    />
+                                ) : (
+                                    <div className="text-center p-6">
+                                        <QrCode size={64} className="text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-400 font-bold">
+                                            {mode === 'single' ? 'Enter a URL' : 'Click "Generate QR"'} to see the preview
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-[280px] aspect-[9/18.5] bg-slate-900 rounded-[3rem] p-3 shadow-2xl relative overflow-hidden ring-8 ring-slate-800 mb-8 border-[6px] border-slate-900">
+                                {/* iPhone-style notch */}
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-900 rounded-b-2xl z-20"></div>
+
+                                <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-y-auto custom-scrollbar p-6 pt-10 flex flex-col items-center">
+                                    {logoPreview ? (
+                                        <div className={`w-16 h-16 bg-white ${cropShape === 'round' ? 'rounded-full' : 'rounded-2xl'} flex items-center justify-center mb-4 shadow-md border border-gray-100 overflow-hidden p-1`}>
+                                            <img src={logoPreview} className="max-w-full max-h-full object-contain" alt="Preview logo" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                                            <span className="text-white text-2xl font-black italic">N</span>
+                                        </div>
+                                    )}
+                                    <h4 className="text-sm font-black text-slate-900 mb-1 text-center min-h-[1.25rem]">
+                                        {multiTitle || 'My Shared Links'}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 font-medium mb-6">Click any link below</p>
+
+                                    <div className="w-full space-y-3">
+                                        {multiLinks.length > 0 ? (
+                                            multiLinks.map((link, i) => (
+                                                <div key={i} className="w-full p-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group">
+                                                    <span className="text-[10px] font-black text-slate-800 truncate pr-2">{link.name || 'Untitled Link'}</span>
+                                                    <ExternalLink size={10} className="text-slate-300" />
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-10 opacity-20">
+                                                <Plus size={32} className="mx-auto mb-2 text-slate-400" />
+                                                <p className="text-[10px] uppercase font-black">No Links Yet</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <footer className="mt-auto pt-8 flex flex-col items-center">
+                                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1">Powered by</p>
+                                        <p className="text-[10px] font-black text-blue-600 italic">N.A.I.R SOLUTIONS</p>
+                                    </footer>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="w-full space-y-4">
                             <h3 className="font-bold text-gray-900 text-center mb-4">Download QR Code</h3>
@@ -426,8 +684,13 @@ const QrGenerator = () => {
                                                     setMode('multi');
                                                     setMultiTitle(qr.title || '');
                                                     setMultiLinks(qr.links.map(l => ({ name: l.name, url: l.url })));
-                                                    setUrl(`${window.location.origin}/q/${qr.shortId}`);
-                                                    // Trigger QR generation for preview manually if needed, or just let user click generate
+                                                    setLogoPreview(qr.logo || null);
+                                                    setLogo(qr.logo || null);
+                                                    setCropShape(qr.logoShape || 'rect');
+                                                    setEditingQrId(qr._id);
+                                                    const qrUrl = `${window.location.origin}/q/${qr.shortId}`;
+                                                    setUrl(qrUrl);
+                                                    generateQrImageData(qrUrl);
                                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                                 }}
                                                 className="text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors"
@@ -462,8 +725,249 @@ const QrGenerator = () => {
                     ))}
                 </div>
             </div>
+            <AddLinkModal
+                isOpen={showAddLinkModal}
+                onClose={() => setShowAddLinkModal(false)}
+                onAdd={handleAddLink}
+            />
+            <CropModal
+                isOpen={showCropModal}
+                image={imageToCrop}
+                shape={cropShape}
+                onClose={() => setShowCropModal(false)}
+                onCropComplete={(croppedData) => {
+                    setLogoPreview(croppedData);
+                    setLogo(croppedData);
+                    setShowCropModal(false);
+                }}
+                onShapeChange={setCropShape}
+            />
         </div>
     );
+};
+
+const AddLinkModal = ({ isOpen, onClose, onAdd }) => {
+    const [linkData, setLinkData] = useState({ name: '', url: '' });
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!linkData.name || !linkData.url) {
+            alert('Please fill both fields');
+            return;
+        }
+        onAdd(linkData);
+        setLinkData({ name: '', url: '' });
+        onClose();
+    };
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden"
+                >
+                    <div className="p-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-black text-slate-900">Add New Link</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <X size={20} className="text-slate-400" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Link Display Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. My Portfolio"
+                                    autoFocus
+                                    value={linkData.name}
+                                    onChange={(e) => setLinkData({ ...linkData, name: e.target.value })}
+                                    className="w-full px-5 py-3.5 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destination URL</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. example.com"
+                                    value={linkData.url}
+                                    onChange={(e) => setLinkData({ ...linkData, url: e.target.value })}
+                                    className="w-full px-5 py-3.5 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-[2] px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transition-all"
+                                >
+                                    <Plus size={18} />
+                                    Add Link
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+const CropModal = ({ isOpen, image, shape, onClose, onCropComplete, onShapeChange }) => {
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+    const onCropChange = (crop) => setCrop(crop);
+    const onZoomChange = (zoom) => setZoom(zoom);
+
+    const onCropCompleteInternal = useCallback((_croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            const croppedImage = await getCroppedImg(image, croppedAreaPixels, shape === 'round');
+            onCropComplete(croppedImage);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to crop image');
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col"
+                >
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 className="text-xl font-black text-slate-900 uppercase">Crop Your Logo</h2>
+                        <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                            <button
+                                onClick={() => onShapeChange('rect')}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${shape === 'rect' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                Square
+                            </button>
+                            <button
+                                onClick={() => onShapeChange('round')}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${shape === 'round' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                Circle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="relative h-[400px] w-full bg-slate-900">
+                        <Cropper
+                            image={image}
+                            crop={crop}
+                            zoom={zoom}
+                            aspect={1}
+                            cropShape={shape === 'round' ? 'round' : 'rect'}
+                            showGrid={false}
+                            onCropChange={onCropChange}
+                            onCropComplete={onCropCompleteInternal}
+                            onZoomChange={onZoomChange}
+                        />
+                    </div>
+
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Zoom Level</label>
+                            <input
+                                type="range"
+                                value={zoom}
+                                min={1}
+                                max={3}
+                                step={0.1}
+                                aria-labelledby="Zoom"
+                                onChange={(e) => setZoom(e.target.value)}
+                                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={onClose}
+                                className="flex-1 px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="flex-[2] px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Save size={20} /> Apply & Save Logo
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+const getCroppedImg = async (imageSrc, pixelCrop, isRound) => {
+    const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.addEventListener('load', () => resolve(img));
+        img.addEventListener('error', (error) => reject(error));
+        img.setAttribute('crossOrigin', 'anonymous');
+        img.src = imageSrc;
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    if (isRound) {
+        ctx.beginPath();
+        ctx.arc(
+            pixelCrop.width / 2,
+            pixelCrop.height / 2,
+            pixelCrop.width / 2,
+            0,
+            2 * Math.PI
+        );
+        ctx.clip();
+    }
+
+    ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height
+    );
+
+    return canvas.toDataURL('image/png');
 };
 
 export default QrGenerator;

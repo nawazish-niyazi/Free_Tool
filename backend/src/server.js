@@ -22,8 +22,8 @@ const app = express();
  * Middleware: These are helpers that run before reaching the routes.
  */
 app.use(cors()); // Allows the frontend to talk to this backend
-app.use(express.json()); // Allows the server to understand JSON data
-app.use(express.urlencoded({ extended: true })); // Allows understanding form data
+app.use(express.json({ limit: '50mb' })); // Allows the server to understand JSON data
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Allows understanding form data
 
 /**
  * Setup: Create a 'temp' folder to store files while they are being converted.

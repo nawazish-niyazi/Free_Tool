@@ -61,32 +61,32 @@ const Home = () => {
             <Navbar />
 
             {/* Hero Section: The big welcome text at the top (Restored to original centered style) */}
-            <div className="relative isolate px-6 pt-14 lg:px-8">
-                <div className="mx-auto max-w-4xl py-20 sm:py-24 lg:py-28 text-center">
-                    <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl mb-6">
+            <div className="relative isolate px-4 sm:px-6 pt-10 sm:pt-14 lg:px-8">
+                <div className="mx-auto max-w-4xl py-12 sm:py-20 lg:py-28 text-center">
+                    <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6">
                         One-Stop <span className="text-blue-600">Solution</span>
                     </h1>
-                    <p className="text-xl leading-8 text-gray-600 mb-10 max-w-2xl mx-auto">
+                    <p className="text-base sm:text-lg lg:text-xl leading-relaxed text-gray-600 mb-10 max-w-2xl mx-auto px-4">
                         Your all-in-one destination for documents, images, and tools. One place to find everything you need to get the job done.
                     </p>
 
                     {/* Local Help Line: Centered integration for logged-in users */}
                     {user && (
-                        <div className="flex justify-center items-center">
+                        <div className="flex justify-center items-center px-4">
                             <Link
                                 to="/local-help"
-                                className="group relative flex flex-row items-center gap-6 p-6 bg-white rounded-[2.5rem] border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-xl"
+                                className="group relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-xl w-full sm:w-auto"
                             >
-                                <div className="p-4 bg-blue-100 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <Search size={28} />
+                                <div className="p-3 sm:p-4 bg-blue-100 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <Search size={24} />
                                 </div>
-                                <div className="text-left">
-                                    <span className="block text-xl font-bold text-gray-900">Local Help Line</span>
-                                    <p className="text-sm text-gray-500 font-medium whitespace-nowrap">
+                                <div className="text-center sm:text-left">
+                                    <span className="block text-lg sm:text-xl font-bold text-gray-900">Local Help Line</span>
+                                    <p className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
                                         Find professionals near you.
                                     </p>
                                 </div>
-                                <div className="ml-4 p-2 bg-blue-600 text-white rounded-full group-hover:translate-x-1 transition-transform">
+                                <div className="hidden sm:flex ml-4 p-2 bg-blue-600 text-white rounded-full group-hover:translate-x-1 transition-transform">
                                     <Zap size={14} />
                                 </div>
                             </Link>

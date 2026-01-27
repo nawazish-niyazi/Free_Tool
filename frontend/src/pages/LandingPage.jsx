@@ -12,7 +12,7 @@ const LandingPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/qr/multi/${shortId}`);
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/qr/multi/${shortId}`);
                 if (res.data.success) {
                     setData(res.data.data);
                 }
@@ -50,9 +50,15 @@ const LandingPage = () => {
         <div className="min-h-screen bg-gray-50 py-12 px-6">
             <div className="max-w-md mx-auto">
                 <div className="text-center mb-10">
-                    <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-200">
-                        <span className="text-white text-3xl font-black italic">N</span>
-                    </div>
+                    {data.logo ? (
+                        <div className={`h-24 bg-white ${data.logoShape === 'round' ? 'w-24 rounded-full' : 'w-fit min-w-[6rem] max-w-[15rem] rounded-[2rem] px-6'} flex items-center justify-center mx-auto mb-6 shadow-xl border border-gray-100 overflow-hidden py-2`}>
+                            <img src={data.logo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                        </div>
+                    ) : (
+                        <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-200">
+                            <span className="text-white text-3xl font-black italic">N</span>
+                        </div>
+                    )}
                     <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase tracking-tight">
                         {data.title || 'My Shared Links'}
                     </h1>

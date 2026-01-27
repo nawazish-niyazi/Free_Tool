@@ -41,6 +41,15 @@ const MultiLinkQRSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    logo: {
+        type: String,
+        default: null
+    },
+    logoShape: {
+        type: String,
+        enum: ['rect', 'round'],
+        default: 'rect'
+    },
     createdAt: {
         type: Date,
         default: Date.now

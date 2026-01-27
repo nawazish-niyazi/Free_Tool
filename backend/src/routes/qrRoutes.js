@@ -77,7 +77,7 @@ router.post('/download', auth.protect, async (req, res) => {
 // @desc    Create a multi-link QR record
 // @access  Public (Optionally private for download)
 router.post('/multi', auth.optionalProtect, async (req, res) => {
-    const { title, links } = req.body;
+    const { title, links, logo, logoShape } = req.body;
 
     if (!links || !Array.isArray(links) || links.length === 0) {
         return res.status(400).json({ success: false, message: 'At least one link is required' });
@@ -90,6 +90,8 @@ router.post('/multi', auth.optionalProtect, async (req, res) => {
             shortId,
             title,
             links,
+            logo,
+            logoShape: logoShape || 'rect',
             creator: req.user?._id || null
         });
 
@@ -130,7 +132,9 @@ router.get('/multi/:shortId', async (req, res) => {
             data: {
                 title: multiLink.title,
                 links: multiLink.links,
-                scanCount: multiLink.scanCount
+                scanCount: multiLink.scanCount,
+                logo: multiLink.logo,
+                logoShape: multiLink.logoShape
             }
         });
     } catch (err) {
@@ -173,6 +177,42 @@ router.delete('/multi/:id', auth.protect, async (req, res) => {
     } catch (err) {
         console.error('Delete multi-link QR error:', err);
         res.status(500).json({ success: false, message: 'Server error deleting QR record' });
+    }
+});
+
+// @route   PUT api/qr/multi/:id
+// @desc    Update a multi-link QR record
+// @access  Private
+router.put('/multi/:id', auth.protect, async (req, res) => {
+    const { title, links, logo, logoShape } = req.body;
+
+    try {
+        const multiLink = await MultiLinkQR.findById(req.params.id);
+
+        if (!multiLink) {
+            return res.status(404).json({ success: false, message: 'QR record not found' });
+        }
+
+        // Check ownership
+        if (multiLink.creator?.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ success: false, message: 'Not authorized to update this QR' });
+        }
+
+        multiLink.title = title || multiLink.title;
+        multiLink.links = links || multiLink.links;
+        multiLink.logo = logo !== undefined ? logo : multiLink.logo;
+        multiLink.logoShape = logoShape || multiLink.logoShape;
+
+        await multiLink.save();
+
+        res.json({
+            success: true,
+            message: 'QR updated successfully',
+            url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/q/${multiLink.shortId}`
+        });
+    } catch (err) {
+        console.error('Update multi-link QR error:', err);
+        res.status(500).json({ success: false, message: 'Server error updating QR record' });
     }
 });
 

@@ -54,6 +54,11 @@ const ProfessionalSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'approved'
+    },
     reviews: [ReviewSchema]
 }, {
     timestamps: true

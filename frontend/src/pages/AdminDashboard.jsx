@@ -3,9 +3,36 @@ import { useAdmin } from '../context/AdminContext';
 import {
     LayoutDashboard, Users, Briefcase, FileText,
     Activity, LogOut, ChevronRight, TrendingUp,
-    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock
+    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle
 } from 'lucide-react';
 import axios from 'axios';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+);
 
 const AdminDashboard = () => {
     const { admin, adminToken, adminLogout } = useAdmin();
@@ -20,9 +47,11 @@ const AdminDashboard = () => {
     const [dataList, setDataList] = useState([]);
     const [listLoading, setListLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [pendingWorkersCount, setPendingWorkersCount] = useState(0);
 
     useEffect(() => {
         fetchStats();
+        fetchPendingWorkers();
     }, []);
 
     useEffect(() => {
@@ -33,7 +62,7 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/dashboard', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/dashboard`, {
                 headers: { Authorization: `Bearer ${adminToken}` }
             });
             if (res.data.success) {
@@ -57,10 +86,11 @@ const AdminDashboard = () => {
                 'users': 'users',
                 'professionals': 'professionals',
                 'invoices': 'invoices',
-                'logs': 'logs'
+                'logs': 'logs',
+                'worker-requests': 'pending-workers'
             };
             const endpoint = endpointMap[activeTab];
-            const res = await axios.get(`http://localhost:5000/api/admin/${endpoint}`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/${endpoint}`, {
                 headers: { Authorization: `Bearer ${adminToken}` }
             });
             if (res.data.success) {
@@ -76,11 +106,40 @@ const AdminDashboard = () => {
     const handleDeleteUser = async (id) => {
         if (!window.confirm('Are you sure you want to delete this user?')) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/users/${id}`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/admin/users/${id}`, {
                 headers: { Authorization: `Bearer ${adminToken}` }
             });
             fetchListData();
         } catch (err) { alert(err.response?.data?.message || 'Delete failed'); }
+    };
+
+    const fetchPendingWorkers = async () => {
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/pending-workers`, {
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+            if (res.data.success) {
+                setPendingWorkersCount(res.data.count);
+            }
+        } catch (err) {
+            console.error('Fetch pending workers error:', err);
+        }
+    };
+
+    const handleWorkerStatus = async (id, status) => {
+        const action = status === 'approved' ? 'approve' : 'reject';
+        if (!window.confirm(`Are you sure you want to ${action} this worker?`)) return;
+
+        try {
+            await axios.put(`${import.meta.env.VITE_API_URL}/admin/workers/${id}/status`,
+                { status },
+                { headers: { Authorization: `Bearer ${adminToken}` } }
+            );
+            fetchListData();
+            fetchPendingWorkers(); // Update count
+        } catch (err) {
+            alert(err.response?.data?.message || 'Status update failed');
+        }
     };
 
     const filteredData = dataList.filter(item => {
@@ -111,19 +170,25 @@ const AdminDashboard = () => {
                             { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
                             { id: 'users', label: 'Users', icon: Users },
                             { id: 'professionals', label: 'Help Line', icon: Briefcase },
+                            { id: 'worker-requests', label: 'Worker Requests', icon: UserPlus, badge: pendingWorkersCount },
                             { id: 'invoices', label: 'Invoices', icon: FileText },
                             { id: 'logs', label: 'Usage Metrics', icon: Database },
                         ].map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => { setActiveTab(item.id); setSearchTerm(''); }}
-                                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === item.id
+                                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all relative ${activeTab === item.id
                                     ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20 translate-x-1'
                                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
                                     }`}
                             >
                                 <item.icon size={20} />
                                 {item.label}
+                                {item.badge > 0 && (
+                                    <span className="ml-auto bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </nav>
@@ -253,6 +318,258 @@ const AdminDashboard = () => {
                     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-900/5 overflow-hidden">
                         {listLoading ? (
                             <div className="py-32 flex flex-col items-center justify-center text-slate-400"><Loader2 className="animate-spin mb-4" size={40} /><p className="font-black uppercase tracking-widest text-xs">Decrypting Records...</p></div>
+                        ) : activeTab === 'logs' ? (
+                            // GRAPHICAL VIEW FOR USAGE METRICS
+                            <div className="p-10 space-y-10">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Usage Analytics <span className="text-blue-600">Dashboard</span></h3>
+                                        <p className="text-sm text-slate-500 font-bold mt-1">Visual representation of tool usage metrics</p>
+                                    </div>
+                                    <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-2xl text-xs font-black uppercase tracking-widest">
+                                        {filteredData.length} Records
+                                    </div>
+                                </div>
+
+                                {/* Charts Grid */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Bar Chart - Tool Usage Comparison */}
+                                    <div className="bg-gradient-to-br from-slate-50 to-white p-8 rounded-[2rem] border border-slate-100 shadow-lg">
+                                        <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                                                <Database className="text-white" size={20} />
+                                            </div>
+                                            Tool Usage Comparison
+                                        </h4>
+                                        <Bar
+                                            data={{
+                                                labels: filteredData.map(item => item.tool.replace(/_/g, ' ').toUpperCase()),
+                                                datasets: [{
+                                                    label: 'Total Hits',
+                                                    data: filteredData.map(item => item.usage),
+                                                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                                                    borderColor: 'rgba(37, 99, 235, 1)',
+                                                    borderWidth: 2,
+                                                    borderRadius: 8,
+                                                    hoverBackgroundColor: 'rgba(59, 130, 246, 0.9)',
+                                                }]
+                                            }}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: true,
+                                                plugins: {
+                                                    legend: {
+                                                        display: false
+                                                    },
+                                                    tooltip: {
+                                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                        titleColor: '#fff',
+                                                        bodyColor: '#fff',
+                                                        padding: 12,
+                                                        cornerRadius: 12,
+                                                        titleFont: { size: 14, weight: 'bold' },
+                                                        bodyFont: { size: 13 }
+                                                    }
+                                                },
+                                                scales: {
+                                                    y: {
+                                                        beginAtZero: true,
+                                                        grid: {
+                                                            color: 'rgba(148, 163, 184, 0.1)',
+                                                        },
+                                                        ticks: {
+                                                            font: { size: 11, weight: 'bold' },
+                                                            color: '#64748b'
+                                                        }
+                                                    },
+                                                    x: {
+                                                        grid: {
+                                                            display: false
+                                                        },
+                                                        ticks: {
+                                                            font: { size: 10, weight: 'bold' },
+                                                            color: '#64748b'
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Doughnut Chart - Usage Distribution */}
+                                    <div className="bg-gradient-to-br from-slate-50 to-white p-8 rounded-[2rem] border border-slate-100 shadow-lg">
+                                        <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
+                                                <Activity className="text-white" size={20} />
+                                            </div>
+                                            Usage Distribution
+                                        </h4>
+                                        <Doughnut
+                                            data={{
+                                                labels: filteredData.map(item => item.tool.replace(/_/g, ' ').toUpperCase()),
+                                                datasets: [{
+                                                    label: 'Usage Share',
+                                                    data: filteredData.map(item => item.usage),
+                                                    backgroundColor: [
+                                                        'rgba(37, 99, 235, 0.8)',
+                                                        'rgba(16, 185, 129, 0.8)',
+                                                        'rgba(245, 158, 11, 0.8)',
+                                                        'rgba(239, 68, 68, 0.8)',
+                                                        'rgba(139, 92, 246, 0.8)',
+                                                        'rgba(236, 72, 153, 0.8)',
+                                                    ],
+                                                    borderColor: [
+                                                        'rgba(37, 99, 235, 1)',
+                                                        'rgba(16, 185, 129, 1)',
+                                                        'rgba(245, 158, 11, 1)',
+                                                        'rgba(239, 68, 68, 1)',
+                                                        'rgba(139, 92, 246, 1)',
+                                                        'rgba(236, 72, 153, 1)',
+                                                    ],
+                                                    borderWidth: 3,
+                                                    hoverOffset: 15
+                                                }]
+                                            }}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: true,
+                                                plugins: {
+                                                    legend: {
+                                                        position: 'bottom',
+                                                        labels: {
+                                                            padding: 15,
+                                                            font: { size: 11, weight: 'bold' },
+                                                            color: '#64748b',
+                                                            usePointStyle: true,
+                                                            pointStyle: 'circle'
+                                                        }
+                                                    },
+                                                    tooltip: {
+                                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                        titleColor: '#fff',
+                                                        bodyColor: '#fff',
+                                                        padding: 12,
+                                                        cornerRadius: 12,
+                                                        titleFont: { size: 14, weight: 'bold' },
+                                                        bodyFont: { size: 13 }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Line Chart - Usage Trend */}
+                                    <div className="bg-gradient-to-br from-slate-50 to-white p-8 rounded-[2rem] border border-slate-100 shadow-lg lg:col-span-2">
+                                        <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
+                                                <TrendingUp className="text-white" size={20} />
+                                            </div>
+                                            Usage Trend Analysis
+                                        </h4>
+                                        <Line
+                                            data={{
+                                                labels: filteredData.map(item => item.tool.replace(/_/g, ' ').toUpperCase()),
+                                                datasets: [{
+                                                    label: 'Total Hits',
+                                                    data: filteredData.map(item => item.usage),
+                                                    borderColor: 'rgba(139, 92, 246, 1)',
+                                                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                                    borderWidth: 3,
+                                                    fill: true,
+                                                    tension: 0.4,
+                                                    pointRadius: 6,
+                                                    pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+                                                    pointBorderColor: '#fff',
+                                                    pointBorderWidth: 3,
+                                                    pointHoverRadius: 8,
+                                                    pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
+                                                    pointHoverBorderColor: '#fff',
+                                                    pointHoverBorderWidth: 3,
+                                                }]
+                                            }}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: true,
+                                                plugins: {
+                                                    legend: {
+                                                        display: false
+                                                    },
+                                                    tooltip: {
+                                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                        titleColor: '#fff',
+                                                        bodyColor: '#fff',
+                                                        padding: 12,
+                                                        cornerRadius: 12,
+                                                        titleFont: { size: 14, weight: 'bold' },
+                                                        bodyFont: { size: 13 }
+                                                    }
+                                                },
+                                                scales: {
+                                                    y: {
+                                                        beginAtZero: true,
+                                                        grid: {
+                                                            color: 'rgba(148, 163, 184, 0.1)',
+                                                        },
+                                                        ticks: {
+                                                            font: { size: 11, weight: 'bold' },
+                                                            color: '#64748b'
+                                                        }
+                                                    },
+                                                    x: {
+                                                        grid: {
+                                                            color: 'rgba(148, 163, 184, 0.1)',
+                                                        },
+                                                        ticks: {
+                                                            font: { size: 10, weight: 'bold' },
+                                                            color: '#64748b'
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Data Table - Compact View */}
+                                <div className="bg-gradient-to-br from-slate-50 to-white p-8 rounded-[2rem] border border-slate-100 shadow-lg">
+                                    <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+                                            <FileText className="text-white" size={20} />
+                                        </div>
+                                        Detailed Records
+                                    </h4>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead className="bg-slate-100 rounded-xl">
+                                                <tr>
+                                                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest rounded-tl-xl">Tool Name</th>
+                                                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing/Usage Month</th>
+                                                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Hits</th>
+                                                    <th className="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest rounded-tr-xl">Growth</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredData.map((item, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-50/50 transition-all group">
+                                                        <td className="p-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-[10px]">API</div>
+                                                                <span className="font-black text-slate-900 uppercase tracking-tight text-xs">{item.tool}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <p className="text-sm font-black text-slate-900">{item.month.split(' ')[0]}</p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.month.split(' ')[1]}</p>
+                                                        </td>
+                                                        <td className="p-4 text-sm font-black text-blue-600">{item.usage}</td>
+                                                        <td className="p-4"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest">Verified</span></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -261,7 +578,7 @@ const AdminDashboard = () => {
                                             {activeTab === 'users' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">User Details</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Joined On</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                             {activeTab === 'professionals' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Professional</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Expertise</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Location</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Social Score</th></>)}
                                             {activeTab === 'invoices' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Invoice Ref</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Issued To</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Amount</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th></>)}
-                                            {activeTab === 'logs' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Tool Name</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing/Usage Month</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Hits</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Growth</th></>)}
+                                            {activeTab === 'worker-requests' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Worker Details</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Service</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Location</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Experience</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -285,19 +602,12 @@ const AdminDashboard = () => {
                                                     <td className="p-6 font-black text-slate-900 text-sm">₹{item.totalAmount}</td>
                                                     <td className="p-6"><span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Generated</span></td>
                                                 </>)}
-                                                {activeTab === 'logs' && (<>
-                                                    <td className="p-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-[10px]">API</div>
-                                                            <span className="font-black text-slate-900 uppercase tracking-tight text-xs">{item.tool}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-6">
-                                                        <p className="text-sm font-black text-slate-900">{item.month.split(' ')[0]}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.month.split(' ')[1]}</p>
-                                                    </td>
-                                                    <td className="p-6 text-sm font-black text-blue-600">{item.usage}</td>
-                                                    <td className="p-6"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest tracking-widest">Verified</span></td>
+                                                {activeTab === 'worker-requests' && (<>
+                                                    <td className="p-6"><div className="flex items-center gap-4"><div className="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center font-black">{item.name?.charAt(0)}</div><div><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.number}</p></div></div></td>
+                                                    <td className="p-6"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest mr-2">{item.category}</span><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest">{item.service}</span></td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600 capitalize">{item.location}</td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600">{item.experience}</td>
+                                                    <td className="p-6"><div className="flex gap-2"><button onClick={() => handleWorkerStatus(item._id, 'approved')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve"><CheckCircle size={20} /></button><button onClick={() => handleWorkerStatus(item._id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject"><XCircle size={20} /></button></div></td>
                                                 </>)}
                                             </tr>
                                         ))}

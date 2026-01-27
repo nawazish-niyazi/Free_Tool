@@ -13,7 +13,9 @@ const {
     getInvoices,
     getMultiLinks,
     updateMultiLink,
-    deleteMultiLink
+    deleteMultiLink,
+    getPendingWorkers,
+    updateWorkerStatus
 } = require('../controllers/adminController');
 const { adminProtect, authorize } = require('../middleware/adminAuth');
 
@@ -36,6 +38,10 @@ router.get('/logs', adminProtect, getLogs);
 router.get('/multi-qrs', adminProtect, getMultiLinks);
 router.put('/multi-qrs/:id', adminProtect, updateMultiLink);
 router.delete('/multi-qrs/:id', adminProtect, authorize('superadmin', 'admin'), deleteMultiLink);
+
+// Worker signup management
+router.get('/pending-workers', adminProtect, getPendingWorkers);
+router.put('/workers/:id/status', adminProtect, updateWorkerStatus);
 
 // Super Admin only
 router.post('/create', adminProtect, authorize('superadmin'), createAdmin);

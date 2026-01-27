@@ -56,7 +56,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="bg-white w-full max-w-md overflow-hidden rounded-[40px] shadow-2xl flex flex-col relative"
+                        className="bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col relative max-h-[90vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header Decoration */}

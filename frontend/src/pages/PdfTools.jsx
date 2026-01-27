@@ -12,6 +12,7 @@ import axios from 'axios';
 import { FileDown, Loader2, Settings2, FileText, Layers, FileType, Zap, Lock, Unlock, Droplets, Eraser } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const PdfTools = () => {
     const { isLoggedIn, setShowAuthModal } = useAuth();
@@ -164,18 +165,18 @@ const PdfTools = () => {
 
             if (isCompressMode) {
                 formData.append('level', compressionLevel);
-                response = await axios.post('http://localhost:5000/api/pdf/compress', formData, config);
+                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/compress`, formData, config);
             } else if (isFromPdfMode) {
                 formData.append('format', targetFormat);
-                response = await axios.post('http://localhost:5000/api/pdf/convert-from-pdf', formData, config);
+                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/convert-from-pdf`, formData, config);
             } else if (isProtectMode) {
                 formData.append('password', password);
-                response = await axios.post('http://localhost:5000/api/pdf/protect', formData, config);
+                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/protect`, formData, config);
             } else if (isUnlockMode) {
                 formData.append('password', password);
-                response = await axios.post('http://localhost:5000/api/pdf/unlock', formData, config);
+                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/unlock`, formData, config);
             } else {
-                response = await axios.post('http://localhost:5000/api/pdf/convert-to-pdf', formData, config);
+                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/convert-to-pdf`, formData, config);
             }
 
             if (response.data.success) {
@@ -203,7 +204,7 @@ const PdfTools = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/pdf/download/${processedFilename}`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/pdf/download/${processedFilename}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
                 responseType: 'blob'
             });
@@ -356,6 +357,10 @@ const PdfTools = () => {
                     )}
                 </div>
             </div>
+            <ProcessingOverlay
+                isOpen={loading}
+                message={isCompressMode ? "Compressing PDF..." : isProtectMode ? "Securing PDF..." : isUnlockMode ? "Unlocking PDF..." : "Converting File..."}
+            />
         </div>
     );
 };

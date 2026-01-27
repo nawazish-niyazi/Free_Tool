@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +14,12 @@
             font-size: 14px;
             line-height: 1.5;
         }
+
         .invoice-container {
             max-width: 800px;
             margin: auto;
         }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -25,34 +28,41 @@
             border-bottom: 2px solid #f3f4f6;
             padding-bottom: 20px;
         }
+
         .logo {
             max-width: 150px;
             max-height: 80px;
             object-fit: contain;
         }
+
         .business-info h1 {
             margin: 0;
             color: #1a56db;
             font-size: 24px;
         }
+
         .business-info p {
             margin: 2px 0;
             color: #6b7280;
         }
+
         .invoice-details {
             text-align: right;
         }
+
         .invoice-details h2 {
             margin: 0;
             font-size: 28px;
             color: #111827;
         }
+
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             margin-bottom: 40px;
         }
+
         .section-title {
             font-weight: 700;
             text-transform: uppercase;
@@ -61,14 +71,18 @@
             letter-spacing: 0.05em;
             margin-bottom: 8px;
         }
-        .client-info p, .billing-details p {
+
+        .client-info p,
+        .billing-details p {
             margin: 2px 0;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
         }
+
         th {
             background-color: #f9fafb;
             text-align: left;
@@ -77,31 +91,38 @@
             color: #374151;
             border-bottom: 1px solid #e5e7eb;
         }
+
         td {
             padding: 12px;
             border-bottom: 1px solid #f3f4f6;
             vertical-align: top;
         }
+
         .text-right {
             text-align: right;
         }
+
         .totals-container {
             display: flex;
             justify-content: flex-end;
         }
+
         .totals-table {
             width: 250px;
         }
+
         .totals-table tr td {
             padding: 8px 0;
             border-bottom: none;
         }
+
         .total-row {
             font-size: 18px;
             font-weight: 700;
             color: #1a56db;
             border-top: 1px solid #e5e7eb;
         }
+
         .footer {
             margin-top: 60px;
             padding-top: 20px;
@@ -109,6 +130,7 @@
             font-size: 12px;
             color: #6b7280;
         }
+
         .badge {
             display: inline-block;
             padding: 4px 8px;
@@ -117,29 +139,49 @@
             font-weight: 600;
             text-transform: uppercase;
         }
-        .badge-paid { background: #dcfce7; color: #166534; }
-        .badge-pending { background: #fef9c3; color: #854d0e; }
+
+        .badge-paid {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
     </style>
 </head>
+
 <body>
     <div class="invoice-container">
         <div class="header">
             <div class="business-info">
                 <% if (business.logo) { %>
                     <img src="<%= business.logo %>" alt="Logo" class="logo">
-                <% } %>
-                <h1><%= business.name %></h1>
-                <p><%= business.address %></p>
-                <p><%= business.email %> | <%= business.phone %></p>
+                    <% } %>
+                        <h1>
+                            <%= business.name %>
+                        </h1>
+                        <p>
+                            <%= business.address %>
+                        </p>
+                        <p>
+                            <%= business.email %> | <%= business.phone %>
+                        </p>
             </div>
             <div class="invoice-details">
                 <h2>INVOICE</h2>
-                <p>#<%= invoiceNumber %></p>
-                <p>Date: <%= issueDate %></p>
-                <p>Due: <%= dueDate %></p>
+                <p>#<%= invoiceNumber %>
+                </p>
+                <p>Date: <%= issueDate %>
+                </p>
+                <p>Due: <%= dueDate %>
+                </p>
                 <% if (status) { %>
-                    <span class="badge badge-<%= status.toLowerCase() %>"><%= status %></span>
-                <% } %>
+                    <span class="badge badge-<%= status.toLowerCase() %>">
+                        <%= status %>
+                    </span>
+                    <% } %>
             </div>
         </div>
 
@@ -147,16 +189,33 @@
             <div class="client-section">
                 <div class="section-title">Bill To</div>
                 <div class="client-info">
-                    <p><strong><%= client.name %></strong></p>
-                    <p><%= client.address %></p>
-                    <p><%= client.email %></p>
+                    <p><strong>
+                            <%= client.name %>
+                        </strong></p>
+                    <p>
+                        <%= client.address %>
+                    </p>
+                    <p>
+                        <%= client.email %>
+                    </p>
+                    <% if (client.phone) { %>
+                        <p>
+                            <%= client.phone %>
+                        </p>
+                        <% } %>
                 </div>
             </div>
             <div class="payment-section">
                 <div class="section-title">Payment info</div>
                 <div class="billing-details">
-                    <p>Currency: <%= currency %></p>
-                    <p>Invoice ID: <%= id %></p>
+                    <p>Currency: <%= currency %>
+                    </p>
+                    <% if (typeof paymentMode !=='undefined' && paymentMode) { %>
+                        <p>Payment Mode: <%= paymentMode %>
+                        </p>
+                        <% } %>
+                            <p>Invoice ID: <%= id %>
+                            </p>
                 </div>
             </div>
         </div>
@@ -164,21 +223,29 @@
         <table>
             <thead>
                 <tr>
-                    <th width="50%">Description</th>
+                    <th width="50%">Product Name</th>
                     <th width="15%" class="text-right">Price</th>
                     <th width="10%" class="text-right">Qty</th>
                     <th width="25%" class="text-right">Total</th>
                 </tr>
             </thead>
             <tbody>
-                <% items.forEach(item => { %>
+                <% items.forEach(item=> { %>
                     <tr>
-                        <td><%= item.description %></td>
-                        <td class="text-right"><%= formatCurrency(item.unitPrice, currency) %></td>
-                        <td class="text-right"><%= item.quantity %></td>
-                        <td class="text-right"><%= formatCurrency(item.total, currency) %></td>
+                        <td>
+                            <%= item.description %>
+                        </td>
+                        <td class="text-right">
+                            <%= formatCurrency(item.unitPrice, currency) %>
+                        </td>
+                        <td class="text-right">
+                            <%= item.quantity %>
+                        </td>
+                        <td class="text-right">
+                            <%= formatCurrency(item.total, currency) %>
+                        </td>
                     </tr>
-                <% }) %>
+                    <% }) %>
             </tbody>
         </table>
 
@@ -186,31 +253,41 @@
             <table class="totals-table">
                 <tr>
                     <td>Subtotal</td>
-                    <td class="text-right"><%= formatCurrency(totals.subtotal, currency) %></td>
+                    <td class="text-right">
+                        <%= formatCurrency(totals.subtotal, currency) %>
+                    </td>
                 </tr>
-                <% if (totals.tax > 0) { %>
-                <tr>
-                    <td>Tax</td>
-                    <td class="text-right"><%= formatCurrency(totals.taxAmount, currency) %></td>
-                </tr>
-                <% } %>
-                <% if (totals.discount > 0) { %>
-                <tr>
-                    <td>Discount</td>
-                    <td class="text-right">-<%= formatCurrency(totals.discountAmount, currency) %></td>
-                </tr>
-                <% } %>
-                <tr class="total-row">
-                    <td>Grand Total</td>
-                    <td class="text-right"><%= formatCurrency(totals.grandTotal, currency) %></td>
-                </tr>
+                <% if (totals.tax> 0) { %>
+                    <tr>
+                        <td>Tax</td>
+                        <td class="text-right">
+                            <%= formatCurrency(totals.taxAmount, currency) %>
+                        </td>
+                    </tr>
+                    <% } %>
+                        <% if (totals.discount> 0) { %>
+                            <tr>
+                                <td>Discount</td>
+                                <td class="text-right">-<%= formatCurrency(totals.discountAmount, currency) %>
+                                </td>
+                            </tr>
+                            <% } %>
+                                <tr class="total-row">
+                                    <td>Grand Total</td>
+                                    <td class="text-right">
+                                        <%= formatCurrency(totals.grandTotal, currency) %>
+                                    </td>
+                                </tr>
             </table>
         </div>
 
         <div class="footer">
             <p><strong>Notes / Terms:</strong></p>
-            <p><%= notes || 'Thank you for your business. Please make payment by the due date.' %></p>
+            <p>
+                <%= notes || 'Thank you for your business. Please make payment by the due date.' %>
+            </p>
         </div>
     </div>
 </body>
+
 </html>
