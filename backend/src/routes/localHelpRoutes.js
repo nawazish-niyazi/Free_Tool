@@ -8,7 +8,7 @@ const { protect } = require('../middleware/auth');
 // @access  Private
 router.get('/professionals', protect, async (req, res) => {
     try {
-        const { location, category, service } = req.query;
+        const { location, category, service, search } = req.query;
         let query = { status: 'approved' }; // Only show approved professionals
 
         // Case-insensitive matching for filters
@@ -16,7 +16,16 @@ router.get('/professionals', protect, async (req, res) => {
         if (category) query.category = { $regex: new RegExp(`^${category}$`, 'i') };
         if (service) query.service = { $regex: new RegExp(`^${service}$`, 'i') };
 
-        console.log('Query filters:', { location, category, service });
+        // General search across name, category, and service
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { category: { $regex: search, $options: 'i' } },
+                { service: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        console.log('Query filters:', { location, category, service, search });
         console.log('MongoDB query:', JSON.stringify(query, null, 2));
 
         const professionals = await Professional.find(query);
@@ -196,7 +205,7 @@ router.post('/worker-signup', async (req, res) => {
             });
         }
 
-        // Create pending professional record
+        // Create approved professional record (Changed from pending for immediate visibility as per user feedback)
         const newWorker = await Professional.create({
             name,
             number,
@@ -204,8 +213,8 @@ router.post('/worker-signup', async (req, res) => {
             category,
             service,
             experience,
-            status: 'pending',
-            verified: false,
+            status: 'approved',
+            verified: true,
             rating: 0,
             reviews: []
         });

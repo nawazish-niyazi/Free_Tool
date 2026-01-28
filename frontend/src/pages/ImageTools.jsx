@@ -130,7 +130,7 @@ const ImageTools = () => {
             <div className="min-h-screen bg-white">
                 <Navbar />
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 text-center">
-                    <h1 className="text-5xl font-black text-slate-900 mb-6 uppercase tracking-tight">
+                    <h1 className="text-4xl md:text-5xl font-semibold md:font-black text-slate-900 mb-6 uppercase tracking-tight">
                         Image <span className="text-blue-600">Power Tools</span>
                     </h1>
                     <p className="text-xl text-slate-500 font-medium mb-16 max-w-2xl mx-auto">
@@ -152,7 +152,7 @@ const ImageTools = () => {
             <Navbar />
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
                 <header className="text-center mb-12">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight uppercase">Resize & Compress</h1>
+                    <h1 className="text-3xl md:text-4xl font-semibold md:font-extrabold text-gray-900 mb-4 tracking-tight uppercase">Resize & Compress</h1>
                     <p className="text-gray-500 text-lg font-medium">Optimize your images for the web in seconds.</p>
                 </header>
 

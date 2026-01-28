@@ -3,7 +3,7 @@ import Cropper from 'react-easy-crop';
 import Navbar from '../components/Navbar';
 import { QrCode, Download, Link as LinkIcon, RefreshCw, Loader2, Settings2, Palette, Plus, Trash2, List, Image as ImageIcon, LogIn, PlusCircle, X, Smartphone, ExternalLink, Save, Plus as PlusIcon, CheckCircle2, Pencil } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const QrGenerator = () => {
@@ -37,7 +37,7 @@ const QrGenerator = () => {
         if (!isLoggedIn) return;
         setFetchLoading(true);
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/qr/my-multi-qrs`);
+            const res = await api.get('/qr/my-multi-qrs');
             if (res.data.success) {
                 setMyQRs(res.data.data);
             }
@@ -102,7 +102,7 @@ const QrGenerator = () => {
 
     const generateQrImageData = async (urlToUse) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/qr/generate`, {
+            const res = await api.post('/qr/generate', {
                 url: urlToUse.startsWith('http') ? urlToUse : `https://${urlToUse}`,
                 options
             });
@@ -132,7 +132,7 @@ const QrGenerator = () => {
 
             setLoading(true);
             try {
-                const res = await axios.post(`${import.meta.env.VITE_API_URL}/qr/generate`, {
+                const res = await api.post('/qr/generate', {
                     url: url.startsWith('http') ? url : `https://${url}`,
                     options
                 });
@@ -160,10 +160,12 @@ const QrGenerator = () => {
                 const payload = { title: multiTitle, links: validLinks, logo: logoPreview, logoShape: cropShape };
 
                 if (editingQrId) {
-                    multiRes = await axios.put(`${import.meta.env.VITE_API_URL}/qr/multi/${editingQrId}`, payload);
+                    multiRes = await api.put(`/qr/multi/${editingQrId}`, payload);
                 } else {
-                    multiRes = await axios.post(`${import.meta.env.VITE_API_URL}/qr/multi`, payload);
+                    multiRes = await api.post('/qr/multi', payload);
                 }
+
+
 
                 if (multiRes.data.success) {
                     const landingPageUrl = multiRes.data.url;
@@ -189,7 +191,7 @@ const QrGenerator = () => {
         if (!window.confirm('Are you sure you want to delete this QR? This will make the links inaccessible.')) return;
 
         try {
-            const res = await axios.delete(`${import.meta.env.VITE_API_URL}/qr/multi/${id}`);
+            const res = await api.delete(`/qr/multi/${id}`);
             if (res.data.success) {
                 setMyQRs(myQRs.filter(qr => qr._id !== id));
                 // If currently viewing the deleted QR, clear it
@@ -242,7 +244,7 @@ const QrGenerator = () => {
         setDownloadLoading(true);
         try {
             const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/qr/download`, {
+            const response = await api.post('/qr/download', {
                 url: fullUrl,
                 format,
                 options
@@ -270,9 +272,9 @@ const QrGenerator = () => {
         <div className="min-h-screen bg-gray-50 pb-20">
             <Navbar />
 
-            <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+            <div className="max-w-5xl mx-auto px-3 md:px-6 py-8 md:py-12">
                 <header className="text-center mb-12">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight uppercase">
+                    <h1 className="text-3xl md:text-4xl font-semibold md:font-extrabold text-gray-900 mb-4 tracking-tight uppercase">
                         Link to <span className="text-blue-600">QR Code</span>
                     </h1>
                     <p className="text-gray-500 text-lg font-medium">Instantly convert any URL into a high-quality QR code.</p>
@@ -297,7 +299,7 @@ const QrGenerator = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     {/* Left Panel: Input & Settings */}
-                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 space-y-8">
+                    <div className="bg-white rounded-[32px] md:rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 space-y-8">
                         {/* Dynamic Input based on Mode */}
                         {mode === 'single' ? (
                             <section>
@@ -538,7 +540,7 @@ const QrGenerator = () => {
                     </div>
 
                     {/* Right Panel: Preview & Download */}
-                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 flex flex-col items-center sticky top-24">
+                    <div className="bg-white rounded-[32px] md:rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 flex flex-col items-center sticky top-24">
                         <div className="flex w-full items-center justify-between mb-8">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Preview</label>
                             {mode === 'multi' && (

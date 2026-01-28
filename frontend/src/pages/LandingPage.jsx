@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -12,7 +12,7 @@ const LandingPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_API_URL}/qr/multi/${shortId}`);
+                const res = await api.get(`/qr/multi/${shortId}`);
                 if (res.data.success) {
                     setData(res.data.data);
                 }
@@ -47,7 +47,7 @@ const LandingPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-6">
+        <div className="min-h-screen bg-gray-50 py-8 px-4 md:py-12 md:px-6">
             <div className="max-w-md mx-auto">
                 <div className="text-center mb-10">
                     {data.logo ? (

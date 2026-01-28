@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import UploadBox from '../components/UploadBox';
-import axios from 'axios';
+import api from '../api/axios';
 import { FileDown, Loader2, AlertCircle } from 'lucide-react';
 
 const RemoveWatermarkPage = () => {
@@ -17,9 +17,10 @@ const RemoveWatermarkPage = () => {
         formData.append('file', file);
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/remove-watermark`, formData, {
+            const response = await api.post('/pdf/remove-watermark', formData, {
                 responseType: 'blob'
             });
+
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             setProcessedLink(url);
@@ -47,10 +48,10 @@ const RemoveWatermarkPage = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="max-w-3xl mx-auto px-6 py-12">
-                <h1 className="text-3xl font-bold mb-8 text-gray-900">Remove Watermark from PDF</h1>
+            <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
+                <h1 className="text-3xl md:text-4xl font-semibold md:font-bold mb-8 text-gray-900 text-center tracking-tight">Remove Watermark from PDF</h1>
 
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     <div className="text-center py-16">
                         <div className="inline-flex p-4 bg-blue-50 text-blue-600 rounded-full mb-6">
                             <AlertCircle size={64} />

@@ -5,7 +5,7 @@ import {
     Activity, LogOut, ChevronRight, TrendingUp,
     ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axios';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -62,9 +62,8 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/dashboard`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
-            });
+            const res = await api.get('/admin/dashboard');
+
             if (res.data.success) {
                 setStats(res.data.stats);
                 setUsage(res.data.toolUsage);
@@ -90,9 +89,8 @@ const AdminDashboard = () => {
                 'worker-requests': 'pending-workers'
             };
             const endpoint = endpointMap[activeTab];
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/${endpoint}`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
-            });
+            const res = await api.get(`/admin/${endpoint}`);
+
             if (res.data.success) {
                 setDataList(res.data.data);
             }
@@ -106,18 +104,16 @@ const AdminDashboard = () => {
     const handleDeleteUser = async (id) => {
         if (!window.confirm('Are you sure you want to delete this user?')) return;
         try {
-            await axios.delete(`${import.meta.env.VITE_API_URL}/admin/users/${id}`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
-            });
+            await api.delete(`/admin/users/${id}`);
+
             fetchListData();
         } catch (err) { alert(err.response?.data?.message || 'Delete failed'); }
     };
 
     const fetchPendingWorkers = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/pending-workers`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
-            });
+            const res = await api.get('/admin/pending-workers');
+
             if (res.data.success) {
                 setPendingWorkersCount(res.data.count);
             }
@@ -131,10 +127,8 @@ const AdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to ${action} this worker?`)) return;
 
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/admin/workers/${id}/status`,
-                { status },
-                { headers: { Authorization: `Bearer ${adminToken}` } }
-            );
+            await api.put(`/admin/workers/${id}/status`, { status });
+
             fetchListData();
             fetchPendingWorkers(); // Update count
         } catch (err) {

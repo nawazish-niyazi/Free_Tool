@@ -101,8 +101,26 @@ app.use((err, req, res, next) => {
  */
 const PORT = process.env.PORT || 5000;
 
+const os = require('os');
+const networkInterfaces = os.networkInterfaces();
+let localIP = 'localhost';
+
+for (const interfaceName in networkInterfaces) {
+    const interfaces = networkInterfaces[interfaceName];
+    for (const iface of interfaces) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+            localIP = iface.address;
+            break;
+        }
+    }
+}
+
 const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`\n====================================================`);
+    console.log(`N.A.I.R Solutions Backend is running!`);
+    console.log(`Local:   http://localhost:${PORT}`);
+    console.log(`Network: http://${localIP}:${PORT}`);
+    console.log(`====================================================\n`);
 });
 
 /**

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, MapPin, Briefcase, Phone, User, Award, CheckCircle, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axios';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const WorkerSignup = () => {
@@ -119,7 +119,7 @@ const WorkerSignup = () => {
         }
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/local-help/worker-signup`, formData);
+            const response = await api.post('/local-help/worker-signup', formData);
 
             if (response.data.success) {
                 setSuccess(true);
@@ -163,9 +163,9 @@ const WorkerSignup = () => {
                         <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="w-12 h-12 text-green-600" />
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Registration Submitted!</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Registration Successful!</h2>
                         <p className="text-lg text-gray-600 mb-8">
-                            Your request has been submitted successfully. Our team will review your application and contact you soon.
+                            Your profile is now live in the Local Help Line directory. You can now be reached by users in your area.
                         </p>
                         <button
                             onClick={() => setSuccess(false)}
@@ -185,8 +185,8 @@ const WorkerSignup = () => {
                             <ul className="text-sm text-blue-800 space-y-1 ml-7">
                                 <li>• No account creation or password required</li>
                                 <li>• Free registration - no charges</li>
-                                <li>• Admin will review and approve your profile</li>
-                                <li>• You'll be contacted once approved</li>
+                                <li>• Your profile will be visible in the directory immediately</li>
+                                <li>• You can be contacted by users directly</li>
                             </ul>
                         </div>
 

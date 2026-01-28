@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import UploadBox from '../components/UploadBox';
 import ToolCard from '../components/ToolCard';
-import axios from 'axios';
+import api from '../api/axios';
 import { FileDown, Loader2, Settings2, FileText, Layers, FileType, Zap, Lock, Unlock, Droplets, Eraser } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -100,7 +100,7 @@ const PdfTools = () => {
         return (
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
+                <div className="max-w-7xl mx-auto px-3 md:px-6 py-8 md:py-12">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">PDF Tools</h1>
                         <p className="text-lg text-gray-600">All the tools you need to work with PDF files.</p>
@@ -165,18 +165,18 @@ const PdfTools = () => {
 
             if (isCompressMode) {
                 formData.append('level', compressionLevel);
-                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/compress`, formData, config);
+                response = await api.post('/pdf/compress', formData, config);
             } else if (isFromPdfMode) {
                 formData.append('format', targetFormat);
-                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/convert-from-pdf`, formData, config);
+                response = await api.post('/pdf/convert-from-pdf', formData, config);
             } else if (isProtectMode) {
                 formData.append('password', password);
-                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/protect`, formData, config);
+                response = await api.post('/pdf/protect', formData, config);
             } else if (isUnlockMode) {
                 formData.append('password', password);
-                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/unlock`, formData, config);
+                response = await api.post('/pdf/unlock', formData, config);
             } else {
-                response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/convert-to-pdf`, formData, config);
+                response = await api.post('/pdf/convert-to-pdf', formData, config);
             }
 
             if (response.data.success) {
@@ -204,10 +204,10 @@ const PdfTools = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/pdf/download/${processedFilename}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
+            const response = await api.get(`/pdf/download/${processedFilename}`, {
                 responseType: 'blob'
             });
+
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -230,11 +230,11 @@ const PdfTools = () => {
         <div className="min-h-screen bg-gray-50">
             <Navbar />
             <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
-                <h1 className="text-3xl font-bold mb-8 text-gray-900">
+                <h1 className="text-3xl md:text-4xl font-semibold md:font-bold mb-8 text-gray-900 text-center tracking-tight">
                     {title}
                 </h1>
 
-                <div className="bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     {!processedFilename ? (
                         <>
                             {/* The box where users drop their files */}

@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import UploadBox from '../components/UploadBox';
-import axios from 'axios';
+import api from '../api/axios';
 import { FileDown, Loader2, Type, Image as ImageIcon, Droplet, RotateCw, Maximize2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ProcessingOverlay from '../components/ProcessingOverlay';
@@ -71,7 +71,7 @@ const WatermarkPage = () => {
         }
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/pdf/watermark`, formData);
+            const response = await api.post('/pdf/watermark', formData);
             if (response.data.success) {
                 setProcessedFilename(response.data.filename);
             }
@@ -96,10 +96,10 @@ const WatermarkPage = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/pdf/download/${processedFilename}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
+            const response = await api.get(`/pdf/download/${processedFilename}`, {
                 responseType: 'blob'
             });
+
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -121,10 +121,10 @@ const WatermarkPage = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="max-w-4xl mx-auto px-6 py-12">
-                <h1 className="text-3xl font-bold mb-8 text-gray-900">Add Watermark to PDF</h1>
+            <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
+                <h1 className="text-3xl md:text-4xl font-semibold md:font-bold mb-8 text-gray-900 text-center tracking-tight">Add Watermark to PDF</h1>
 
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     {!processedFilename ? (
                         <>
                             {/* Upload Area */}

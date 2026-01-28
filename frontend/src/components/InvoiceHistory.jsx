@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { Search, History, Calendar, User, CreditCard, ExternalLink, Loader2, AlertCircle, FileText, UserCircle, X, Building2, Receipt, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -24,8 +24,8 @@ const InvoiceHistory = () => {
         setLoading(true);
         setError(null);
         try {
-            console.log(`Fetching recent invoices from: ${import.meta.env.VITE_API_URL}/invoice/recent`);
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/invoice/recent`);
+            const response = await api.get('/invoice/recent');
+
             console.log('Recent invoices response:', response.data);
 
             if (response.data && response.data.success) {
@@ -57,8 +57,8 @@ const InvoiceHistory = () => {
 
         setLoading(true);
         try {
-            console.log(`Searching for: ${query}`);
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/invoice/search?query=${query}`);
+            const response = await api.get(`/invoice/search?query=${query}`);
+
             console.log('Search response:', response.data);
 
             if (response.data && response.data.success) {

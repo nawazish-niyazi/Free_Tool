@@ -23,36 +23,36 @@ const Home = () => {
             description: 'Create professional PDF invoices with custom branding.',
             icon: Building2,
             to: '/invoice-generator',
-            color: 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-900/5'
+            color: 'bg-slate-200 hover:bg-slate-300 border-2 border-slate-900/5'
         },
         {
             title: 'QR Code Generator',
             description: 'Convert any link into a custom QR code instantly.',
             icon: QrCode,
             to: '/qr-generator',
-            color: 'bg-yellow-50/50 hover:bg-yellow-50'
+            color: 'bg-yellow-100 hover:bg-yellow-200'
         },
         {
             title: 'PDF Tools',
             description: 'Convert, Compress, Protect, and Edit your PDF files in one place.',
             icon: FileText,
             to: '/pdf-tools',
-            color: 'bg-indigo-50/50 hover:bg-indigo-50'
+            color: 'bg-indigo-100 hover:bg-indigo-200'
         },
         {
             title: 'Image Tools',
             description: 'Resize, Compress, and Convert Images instantly.',
             icon: Image,
             to: '/image-tools',
-            color: 'bg-emerald-50/50 hover:bg-emerald-50'
+            color: 'bg-emerald-100 hover:bg-emerald-200'
         },
         {
             title: 'Local Help',
             description: 'Find local plumbers, electricians, and other professionals nearby.',
             icon: Search,
             to: '/local-help',
-            color: 'bg-cyan-50/50 hover:bg-cyan-50'
-        }
+            color: 'bg-cyan-100 hover:bg-cyan-200'
+        },
     ].filter(tool => tool.to !== '/local-help' || user);
 
     return (

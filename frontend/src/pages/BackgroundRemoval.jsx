@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import UploadBox from '../components/UploadBox';
-import axios from 'axios';
+import api, { API_URL } from '../api/axios';
 import { FileDown, Loader2, Image as ImageIcon, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ProcessingOverlay from '../components/ProcessingOverlay';
@@ -31,9 +31,10 @@ const BackgroundRemoval = () => {
         formData.append('file', file);
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/image/remove-bg`, formData, {
+            const res = await api.post('/image/remove-bg', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+
 
             if (res.data.success) {
                 setProcessedFilename(res.data.filename);
@@ -56,10 +57,10 @@ const BackgroundRemoval = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/image/download/${processedFilename}`, {
-                headers: { 'Authorization': `Bearer ${token}` },
+            const response = await api.get(`/image/download/${processedFilename}`, {
                 responseType: 'blob'
             });
+
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -77,12 +78,12 @@ const BackgroundRemoval = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             <Navbar />
-            <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-12">
                 <header className="text-center mb-12">
                     <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-4 shadow-sm">
                         <Sparkles size={32} />
                     </div>
-                    <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">AI Background Removal</h1>
+                    <h1 className="text-3xl md:text-4xl font-semibold md:font-black text-slate-900 mb-4 tracking-tight">AI Background Removal</h1>
                     <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">
                         Automatically remove backgrounds from your images in seconds. Powered by open-source AI.
                     </p>
@@ -143,7 +144,7 @@ const BackgroundRemoval = () => {
 
                                 <div className="bg-[#f0f0f0] bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:20px_20px] rounded-3xl p-4 md:p-8 border border-slate-200 mb-10 inline-block w-full max-w-2xl">
                                     <img
-                                        src={`${import.meta.env.VITE_API_URL.replace('/api', '/temp')}/${processedFilename}`}
+                                        src={`${API_URL.replace('/api', '/temp')}/${processedFilename}`}
                                         alt="Processed"
                                         className="max-w-full max-h-96 object-contain mx-auto drop-shadow-2xl"
                                     />

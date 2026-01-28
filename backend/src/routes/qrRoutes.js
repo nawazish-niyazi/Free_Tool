@@ -100,8 +100,9 @@ router.post('/multi', auth.optionalProtect, async (req, res) => {
         res.json({
             success: true,
             shortId,
-            url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/q/${shortId}`
+            url: `${req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173'}/q/${shortId}`
         });
+
     } catch (err) {
         console.error('Multi-Link QR creation error:', err);
         res.status(500).json({ success: false, message: 'Server error creating multi-link QR' });
@@ -208,8 +209,9 @@ router.put('/multi/:id', auth.protect, async (req, res) => {
         res.json({
             success: true,
             message: 'QR updated successfully',
-            url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/q/${multiLink.shortId}`
+            url: `${req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173'}/q/${multiLink.shortId}`
         });
+
     } catch (err) {
         console.error('Update multi-link QR error:', err);
         res.status(500).json({ success: false, message: 'Server error updating QR record' });

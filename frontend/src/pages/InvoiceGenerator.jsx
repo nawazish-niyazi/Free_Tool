@@ -12,6 +12,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 // Configure PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+import { API_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
@@ -317,7 +318,7 @@ const InvoiceGenerator = () => {
         formData.append('data', JSON.stringify(invoiceToUpload));
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/invoice/generate`, formData, {
+            const response = await axios.post(`${API_URL}/invoice/generate`, formData, {
                 responseType: 'blob'
             });
 
@@ -364,7 +365,7 @@ const InvoiceGenerator = () => {
         formData.append('data', JSON.stringify(invoiceToUpload));
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/invoice/generate`, formData, {
+            const response = await axios.post(`${API_URL}/invoice/generate`, formData, {
                 responseType: 'blob'
             });
 
@@ -384,7 +385,7 @@ const InvoiceGenerator = () => {
         <div className="min-h-screen bg-slate-50">
             <Navbar />
 
-            <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+            <div className="max-w-7xl mx-auto px-3 md:px-6 py-8 md:py-12">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Generator</h1>
@@ -409,11 +410,11 @@ const InvoiceGenerator = () => {
                         </div>
                     </div>
 
-                    <div className="hidden md:flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                         <button
                             onClick={handlePreview}
                             disabled={previewLoading || loading}
-                            className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-bold rounded-2xl border-2 border-slate-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                            className="flex-1 md:flex-none px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-bold rounded-2xl border-2 border-slate-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
                         >
                             {previewLoading ? (
                                 <Loader2 className="animate-spin" size={20} />
@@ -426,14 +427,14 @@ const InvoiceGenerator = () => {
                         <button
                             onClick={generateInvoice}
                             disabled={loading || previewLoading}
-                            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
+                            className="flex-1 md:flex-none px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-70"
                         >
                             {loading ? (
                                 <Loader2 className="animate-spin" size={20} />
                             ) : (
                                 <Download size={20} className="group-hover:scale-110 transition-transform" />
                             )}
-                            <span>{loading ? 'Generating...' : 'Download PDF'}</span>
+                            <span>{loading ? 'Generating...' : 'Download'}</span>
                         </button>
                     </div>
                 </div>
@@ -601,7 +602,7 @@ const InvoiceGenerator = () => {
                                         />
                                         <input
                                             type="text"
-                                            placeholder="Client Phone *"
+                                            placeholder="Phone *"
                                             value={invoice.client.phone}
                                             onChange={(e) => handleInputChange('client', 'phone', e.target.value)}
                                             autoComplete="off"
@@ -613,7 +614,7 @@ const InvoiceGenerator = () => {
                         </div>
 
                         {/* Items Table */}
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="bg-white rounded-[32px] md:rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 overflow-hidden">
                             <div className="p-4 md:p-8 border-b border-slate-50 flex justify-between items-center">
                                 <div className="flex items-center gap-2 text-slate-900">
                                     <Receipt size={24} />
@@ -746,7 +747,7 @@ const InvoiceGenerator = () => {
 
                     {/* Summary Sidebar */}
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-slate-900 text-white p-5 md:p-8 rounded-[40px] shadow-2xl shadow-blue-100 sticky top-12">
+                        <div className="bg-slate-900 text-white p-4 md:p-8 rounded-[32px] md:rounded-[40px] shadow-2xl shadow-blue-100 sticky top-12">
                             <h3 className="text-lg font-black mb-8 uppercase tracking-widest text-slate-400">Total Summary</h3>
 
                             <div className="space-y-6">
@@ -812,7 +813,7 @@ const InvoiceGenerator = () => {
                                     <button
                                         onClick={handlePreview}
                                         disabled={previewLoading || loading}
-                                        className="w-full py-4 bg-white text-slate-900 font-bold rounded-2xl border-2 border-white/10 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="group block bg-white hover:bg-blue-600 p-4 md:p-5 rounded-3xl border border-gray-100 shadow-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 flex items-center justify-between"
                                     >
                                         {previewLoading ? <Loader2 className="animate-spin" size={18} /> : <Eye size={18} />}
                                         Preview

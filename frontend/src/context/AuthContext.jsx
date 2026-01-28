@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 const AuthContext = createContext();
 
@@ -10,19 +10,14 @@ export const AuthProvider = ({ children }) => {
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
-        if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            fetchUser();
-        } else {
-            delete axios.defaults.headers.common['Authorization'];
-            setUser(null);
-            setLoading(false);
-        }
+        // Token managed via interceptor in api/axios.js
+        fetchUser();
+
     }, [token]);
 
     const fetchUser = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`);
+            const res = await api.get('/auth/me');
             if (res.data.success) {
                 setUser(res.data.user);
             } else {
@@ -38,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (phone, password) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { phone, password });
+            const res = await api.post('/auth/login', { phone, password });
             if (res.data.success) {
                 localStorage.setItem('token', res.data.token);
                 setToken(res.data.token);
@@ -55,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, phone, password, email) => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
+            const res = await api.post('/auth/register', {
                 name,
                 phone,
                 password,
@@ -79,7 +74,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
-        delete axios.defaults.headers.common['Authorization'];
+        api.defaults.headers.common['Authorization'] = '';
     };
 
     return (

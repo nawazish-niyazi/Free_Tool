@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { Search, MapPin, Briefcase, Phone, User, Star, ShieldCheck, Clock, MessageSquare, Send, ChevronRight, Lock, Loader2, Sparkles, Filter } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../api/axios';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const CATEGORIES = [
@@ -70,6 +71,7 @@ const CATEGORIES = [
 ];
 
 const LOCATIONS = ["Smriti Nagar", "Nehru Nagar", "Kohka", "Supela", "Durg"];
+const ALL_SERVICES = [...new Set(CATEGORIES.flatMap(cat => cat.services))].sort();
 
 const LocalHelpPage = () => {
     const { user: authUser, isLoggedIn, setShowAuthModal } = useAuth();
@@ -80,8 +82,19 @@ const LocalHelpPage = () => {
     const [selectedLocation, setSelectedLocation] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedService, setSelectedService] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [newReview, setNewReview] = useState({ workerId: null, rating: 5, comment: '' });
+    const [activeTooltip, setActiveTooltip] = useState(null);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const tooltips = {
+        location: "Select your neighborhood to find the nearest professionals.",
+        category: "Choose a service category to see available specialties.",
+        service: "Pick the exact service you need from this list."
+    };
 
     const fetchWorkers = async () => {
         setLoading(true);
@@ -90,8 +103,9 @@ const LocalHelpPage = () => {
             if (selectedLocation) params.location = selectedLocation.toLowerCase();
             if (selectedCategory) params.category = selectedCategory;
             if (selectedService) params.service = selectedService;
+            if (searchQuery) params.search = searchQuery;
 
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/local-help/professionals`, { params });
+            const res = await api.get('/local-help/professionals', { params });
             if (res.data.success) {
                 setWorkers(res.data.data);
             }
@@ -105,16 +119,46 @@ const LocalHelpPage = () => {
     const handleSearch = () => {
         fetchWorkers();
         setHasSearched(true);
+        setShowSuggestions(false);
     };
+
+    const handleSuggestionClick = (suggestion) => {
+        setSearchQuery(suggestion);
+        setShowSuggestions(false);
+        // We use the suggestion directly since state update is async
+        setLoading(true);
+        api.get('/local-help/professionals', { params: { search: suggestion, location: selectedLocation.toLowerCase(), category: selectedCategory, service: selectedService } })
+            .then(res => {
+                if (res.data.success) {
+                    setWorkers(res.data.data);
+                    setHasSearched(true);
+                }
+            })
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        if (searchQuery.length > 0) {
+            const filtered = ALL_SERVICES.filter(s =>
+                s.toLowerCase().includes(searchQuery.toLowerCase())
+            ).slice(0, 8); // Limit to 8 suggestions
+            setSuggestions(filtered);
+            setShowSuggestions(true);
+        } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+    }, [searchQuery]);
 
     const handleAddReview = async (workerId) => {
         if (!newReview.comment.trim()) return;
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/local-help/review/${workerId}`, {
+            const res = await api.post(`/local-help/review/${workerId}`, {
                 rating: newReview.rating,
                 comment: newReview.comment
             });
+
 
             if (res.data.success) {
                 // Update local state
@@ -131,7 +175,7 @@ const LocalHelpPage = () => {
         if (!window.confirm("This will reset and seed new professionals data. Continue?")) return;
         setLoading(true);
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/local-help/seed`);
+            await api.post('/local-help/seed');
             fetchWorkers();
             alert("Data seeded successfully!");
         } catch (err) {
@@ -191,7 +235,7 @@ const LocalHelpPage = () => {
             <div className="max-w-4xl mx-auto px-3 md:px-4 py-6 md:py-8">
                 {/* Simplified Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-3">
+                    <h1 className="text-3xl md:text-4xl font-semibold md:font-bold text-slate-800 mb-3">
                         Local Help Line
                     </h1>
                     <p className="text-slate-600">
@@ -199,67 +243,188 @@ const LocalHelpPage = () => {
                     </p>
                 </div>
 
-                {/* Simplified Search Box */}
+                {/* Enhanced Search & Filter Box */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div className="flex flex-col">
-                            <label className="text-sm font-semibold text-slate-700 mb-1">Select Location</label>
-                            <select
-                                value={selectedLocation}
-                                onChange={(e) => setSelectedLocation(e.target.value)}
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                    <div className="flex flex-col gap-4">
+                        {/* Main Search Bar */}
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                <Search size={22} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search singer, painter..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => searchQuery.length > 0 && setShowSuggestions(true)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                className="w-full pl-10 md:pl-12 pr-28 md:pr-32 py-3.5 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-base md:text-lg text-slate-800 placeholder:text-slate-400"
+                            />
+
+                            {/* Autocomplete Suggestions */}
+                            <AnimatePresence>
+                                {showSuggestions && suggestions.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 overflow-hidden"
+                                    >
+                                        {suggestions.map((suggestion, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => handleSuggestionClick(suggestion)}
+                                                className="w-full px-5 py-3 text-left hover:bg-blue-50 flex items-center gap-3 border-b border-slate-50 last:border-0 transition-colors group"
+                                            >
+                                                <Search size={16} className="text-slate-400 group-hover:text-blue-500" />
+                                                <span className="text-slate-700 font-medium group-hover:text-blue-600">{suggestion}</span>
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <button
+                                onClick={handleSearch}
+                                disabled={loading}
+                                className="absolute right-1.5 top-1.5 bottom-1.5 px-4 md:px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center gap-2 disabled:opacity-70 text-sm md:text-base"
                             >
-                                <option value="">All Locations</option>
-                                {LOCATIONS.map(loc => (
-                                    <option key={loc} value={loc.toLowerCase()}>{loc}</option>
-                                ))}
-                            </select>
+                                {loading ? <Loader2 className="animate-spin" size={18} /> : "Search"}
+                            </button>
                         </div>
 
-                        <div className="flex flex-col">
-                            <label className="text-sm font-semibold text-slate-700 mb-1">Select Category</label>
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => {
-                                    setSelectedCategory(e.target.value);
-                                    setSelectedService('');
-                                }}
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                        {/* Filter Toggle */}
+                        <div className="flex justify-between items-center px-1">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`flex items-center gap-2 text-sm font-bold transition-colors ${showFilters ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                             >
-                                <option value="">All Categories</option>
-                                {CATEGORIES.map(cat => (
-                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
-                                ))}
-                            </select>
+                                <Filter size={16} />
+                                {showFilters ? 'Hide Filters' : 'Show Advanced Filters'}
+                            </button>
+                            {(selectedLocation || selectedCategory || selectedService) && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedLocation('');
+                                        setSelectedCategory('');
+                                        setSelectedService('');
+                                        handleSearch();
+                                    }}
+                                    className="text-xs font-bold text-red-500 hover:underline"
+                                >
+                                    Clear Filters
+                                </button>
+                            )}
                         </div>
 
-                        <div className="flex flex-col">
-                            <label className="text-sm font-semibold text-slate-700 mb-1">Service Type</label>
-                            <select
-                                value={selectedService}
-                                onChange={(e) => setSelectedService(e.target.value)}
-                                disabled={!selectedCategory}
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <option value="">{selectedCategory ? `All ${selectedCategory}` : "First Select Category"}</option>
-                                {availableServices.map(svc => (
-                                    <option key={svc} value={svc}>{svc}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Collapsible Filters */}
+                        <AnimatePresence>
+                            {showFilters && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100 mt-2">
+                                        <div className="flex flex-col relative">
+                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Location</label>
+                                            <AnimatePresence>
+                                                {activeTooltip === 'location' && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
+                                                    >
+                                                        <Sparkles size={12} className="text-blue-100" />
+                                                        <span className="font-medium">{tooltips.location}</span>
+                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                            <select
+                                                value={selectedLocation}
+                                                onChange={(e) => setSelectedLocation(e.target.value)}
+                                                onFocus={() => setActiveTooltip('location')}
+                                                onBlur={() => setActiveTooltip(null)}
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                            >
+                                                <option value="">All Locations</option>
+                                                {LOCATIONS.map(loc => (
+                                                    <option key={loc} value={loc.toLowerCase()}>{loc}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex flex-col relative">
+                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Category</label>
+                                            <AnimatePresence>
+                                                {activeTooltip === 'category' && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
+                                                    >
+                                                        <Sparkles size={12} className="text-blue-100" />
+                                                        <span className="font-medium">{tooltips.category}</span>
+                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                            <select
+                                                value={selectedCategory}
+                                                onChange={(e) => {
+                                                    setSelectedCategory(e.target.value);
+                                                    setSelectedService('');
+                                                }}
+                                                onFocus={() => setActiveTooltip('category')}
+                                                onBlur={() => setActiveTooltip(null)}
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                            >
+                                                <option value="">All Categories</option>
+                                                {CATEGORIES.map(cat => (
+                                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex flex-col relative">
+                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Service Type</label>
+                                            <AnimatePresence>
+                                                {activeTooltip === 'service' && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
+                                                    >
+                                                        <Sparkles size={12} className="text-blue-100" />
+                                                        <span className="font-medium">{tooltips.service}</span>
+                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                            <select
+                                                value={selectedService}
+                                                onChange={(e) => setSelectedService(e.target.value)}
+                                                disabled={!selectedCategory}
+                                                onFocus={() => setActiveTooltip('service')}
+                                                onBlur={() => setActiveTooltip(null)}
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">{selectedCategory ? `All ${selectedCategory}` : "First Select Category"}</option>
+                                                {availableServices.map(svc => (
+                                                    <option key={svc} value={svc}>{svc}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
-
-                    <button
-                        onClick={handleSearch}
-                        disabled={loading}
-                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-70"
-                    >
-                        {loading ? <Loader2 className="animate-spin" size={24} /> : (
-                            <>
-                                <Search size={22} /> Find Professionals
-                            </>
-                        )}
-                    </button>
 
                     {/* Developer Tool - Subtle */}
                     <div className="mt-2 text-right">
@@ -281,19 +446,44 @@ const LocalHelpPage = () => {
                         </div>
                     ) : workers.length > 0 ? (
                         <div className="space-y-6">
-                            <h3 className="text-xl font-bold text-slate-800 px-2">
-                                {workers.length} Professionals Found
-                            </h3>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 md:px-2">
+                                <h3 className="text-lg md:text-xl font-bold text-slate-800">
+                                    {workers.length} Professionals Found
+                                </h3>
+
+                                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0">Near:</span>
+                                    <button
+                                        onClick={() => { setSelectedLocation(''); fetchWorkers(); }}
+                                        className={`px-3 py-1.5 rounded-full text-[11px] md:text-xs font-bold transition-all shrink-0 ${!selectedLocation ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300'}`}
+                                    >
+                                        All
+                                    </button>
+                                    {LOCATIONS.map(loc => (
+                                        <button
+                                            key={loc}
+                                            onClick={() => { setSelectedLocation(loc.toLowerCase()); fetchWorkers(); }}
+                                            className={`px-3 py-1.5 rounded-full text-[11px] md:text-xs font-bold transition-all shrink-0 ${selectedLocation === loc.toLowerCase() ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300'}`}
+                                        >
+                                            {loc}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {workers.map(worker => (
                                 <div key={worker._id} className="bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                                     <div className="flex flex-col sm:flex-row gap-5">
                                         {/* Avatar & Basic Info */}
-                                        <div className="flex sm:flex-col items-center sm:w-32 shrink-0 gap-4 sm:gap-2">
-                                            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                                <User size={32} className="sm:w-10 sm:h-10" />
+                                        <div className="flex flex-row sm:flex-col items-center sm:w-32 shrink-0 gap-4 sm:gap-2">
+                                            <div className="w-14 h-14 sm:w-24 sm:h-24 bg-blue-100 rounded-2xl sm:rounded-full flex items-center justify-center text-blue-600 shadow-inner shrink-0">
+                                                <User size={28} className="sm:w-10 sm:h-10" />
                                             </div>
-                                            <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-md text-sm font-bold border border-amber-100">
-                                                <Star size={14} className="fill-current" /> {worker.rating}
+                                            <div className="flex flex-col sm:items-center gap-1">
+                                                <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 sm:py-1 rounded-md text-xs sm:text-sm font-bold border border-amber-100">
+                                                    <Star size={12} className="fill-current sm:w-14 sm:h-14" /> {worker.rating}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase sm:hidden">Rating</span>
                                             </div>
                                         </div>
 
@@ -347,31 +537,31 @@ const LocalHelpPage = () => {
                                                 </div>
 
                                                 {/* Simple Review Input */}
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                                                     <div className="flex-1 relative">
                                                         <input
                                                             type="text"
                                                             placeholder="Write a review..."
                                                             value={newReview.workerId === worker._id ? newReview.comment : ''}
                                                             onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
-                                                            className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            className="w-full pl-3 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                         />
                                                         <button
                                                             onClick={() => handleAddReview(worker._id)}
-                                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                                                         >
                                                             <Send size={16} />
                                                         </button>
                                                     </div>
-                                                    <div className="flex gap-0.5 shrink-0">
+                                                    <div className="flex justify-center sm:justify-start gap-1 p-1 bg-slate-50 rounded-lg border border-slate-100">
                                                         {[1, 2, 3, 4, 5].map((star) => (
                                                             <button
                                                                 key={star}
                                                                 onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
-                                                                className="p-1 hover:bg-slate-100 rounded"
+                                                                className="p-1.5 hover:bg-white hover:shadow-sm rounded transition-all"
                                                             >
                                                                 <Star
-                                                                    size={16}
+                                                                    size={18}
                                                                     className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-400 fill-current" : "text-slate-300"}
                                                                 />
                                                             </button>
