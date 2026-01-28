@@ -9,82 +9,114 @@ const Invoice = require('../models/Invoice');
 
 // POST /api/invoice/generate
 router.post('/generate', protect, upload.single('logo'), async (req, res) => {
+    console.log('--- INVOICE GENERATION START ---');
     try {
         let invoiceData;
 
         // Data might come as stringified JSON if mixed with file upload
         if (req.body.data) {
-            invoiceData = JSON.parse(req.body.data);
+            console.log('Invoice data received as stringified JSON');
+            try {
+                invoiceData = JSON.parse(req.body.data);
+            } catch (parseErr) {
+                console.error('JSON Parse Error:', parseErr);
+                return res.status(400).json({ success: false, message: 'Invalid invoice data format' });
+            }
         } else {
+            console.log('Invoice data received as JSON body');
             invoiceData = req.body;
         }
 
+        if (!invoiceData || Object.keys(invoiceData).length === 0) {
+            console.error('Error: Empty invoice data');
+            return res.status(400).json({ success: false, message: 'Invoice data is missing' });
+        }
+
+        console.log(`Generating invoice ${invoiceData.invoiceNumber || 'Unknown'} for user ${req.user?._id || 'Guest'}`);
+
         // Handle uploaded logo - Convert to Base64 for reliable PDF rendering
         if (req.file) {
+            console.log('Processing uploaded logo file:', req.file.path);
             const logoBuffer = fs.readFileSync(req.file.path);
             const logoBase64 = logoBuffer.toString('base64');
             const logoMime = req.file.mimetype;
             invoiceData.business = invoiceData.business || {};
             invoiceData.business.logo = `data:${logoMime};base64,${logoBase64}`;
+        } else if (invoiceData.business?.logo) {
+            console.log('Using existing logo from data');
         }
 
         const outputDir = path.join(__dirname, '../../temp');
-        const result = await invoiceService.generateInvoicePdf(invoiceData, outputDir);
-
-        // SAVE TO DATABASE
-        try {
-            const data = result.invoiceData;
-            console.log('Preparing to save invoice:', data.invoiceNumber);
-
-            const newInvoice = new Invoice({
-                invoiceID: data.invoiceID,
-                invoiceNumber: data.invoiceNumber,
-                user: req.user.id, // Tie to user
-                issueDate: data.issueDate,
-                dueDate: data.dueDate,
-                currency: data.currency,
-                business: {
-                    name: data.business.name,
-                    address: data.business.address,
-                    email: data.business.email,
-                    phone: data.business.phone,
-                    logoPath: req.file ? req.file.path : null,
-                    logoData: req.file ? invoiceData.business.logo : null
-                },
-                client: data.client,
-                items: data.items.map(item => ({
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    total: item.total
-                })),
-                totals: data.totals,
-                notes: data.notes,
-                paymentMode: data.paymentMode,
-                pdfPath: data.pdfPath
-            });
-
-            const saved = await newInvoice.save();
-            console.log('SUCCESS: Invoice saved to DB for user:', req.user.phone);
-        } catch (dbErr) {
-            console.error('CRITICAL DATABASE ERROR:', dbErr);
+        if (!fs.existsSync(outputDir)) {
+            console.log('Creating temp directory:', outputDir);
+            fs.mkdirSync(outputDir, { recursive: true });
         }
 
+        console.log('Calling invoiceService.generateInvoicePdf...');
+        const result = await invoiceService.generateInvoicePdf(invoiceData, outputDir);
+        console.log('PDF generated at:', result.outputPath);
+
+        // SAVE TO DATABASE (Optional - don't let it block)
+        if (req.user) {
+            try {
+                const data = result.invoiceData;
+                console.log('Saving to database...');
+                const newInvoice = new Invoice({
+                    invoiceID: data.invoiceID,
+                    invoiceNumber: data.invoiceNumber,
+                    user: req.user.id,
+                    issueDate: data.issueDate,
+                    dueDate: data.dueDate,
+                    currency: data.currency,
+                    business: {
+                        name: data.business.name,
+                        address: data.business.address,
+                        email: data.business.email,
+                        phone: data.business.phone,
+                        logoPath: req.file ? req.file.path : null,
+                        logoData: invoiceData.business?.logo || null
+                    },
+                    client: data.client,
+                    items: data.items.map(item => ({
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        total: item.total
+                    })),
+                    totals: data.totals,
+                    notes: data.notes,
+                    paymentMode: data.paymentMode,
+                    pdfPath: result.outputPath
+                });
+
+                await newInvoice.save();
+                console.log('Invoice database record created.');
+            } catch (dbErr) {
+                console.error('Database record creation failed (Request will still continue):', dbErr.message);
+            }
+        }
+
+        console.log('Sending file for download...');
         res.download(result.outputPath, result.filename, (err) => {
-            if (err) console.error('Error sending invoice:', err);
+            if (err) {
+                console.error('File download error:', err);
+            }
 
-            // Cleanup: delete logo if exists
+            // Cleanup
             if (req.file) deleteFile(req.file.path);
-
-            // Cleanup: delete generated PDF after 5 minutes
-            setTimeout(() => deleteFile(result.outputPath), 1000 * 60 * 5);
+            setTimeout(() => {
+                if (fs.existsSync(result.outputPath)) {
+                    deleteFile(result.outputPath);
+                    console.log('Cleaned up generated PDF:', result.outputPath);
+                }
+            }, 1000 * 60 * 5);
         });
 
     } catch (error) {
-        console.error('Invoice generation error:', error);
+        console.error('CRITICAL ROUTE ERROR:', error);
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message || 'Internal server error during invoice generation'
         });
     }
 });

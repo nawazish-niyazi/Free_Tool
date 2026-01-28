@@ -62,7 +62,7 @@ const Home = () => {
 
             {/* Hero Section: The big welcome text at the top (Restored to original centered style) */}
             <div className="relative isolate px-4 sm:px-6 pt-10 sm:pt-14 lg:px-8">
-                <div className="mx-auto max-w-4xl py-12 sm:py-20 lg:py-28 text-center">
+                <div className="mx-auto max-w-4xl py-8 sm:py-20 lg:py-28 text-center">
                     <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6">
                         One-Stop <span className="text-blue-600">Solution</span>
                     </h1>
@@ -75,7 +75,7 @@ const Home = () => {
                         <div className="flex justify-center items-center px-4">
                             <Link
                                 to="/local-help"
-                                className="group relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-xl w-full sm:w-auto"
+                                className="group relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 md:p-6 bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-xl w-full sm:w-auto"
                             >
                                 <div className="p-3 sm:p-4 bg-blue-100 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
                                     <Search size={24} />
@@ -96,7 +96,7 @@ const Home = () => {
             </div>
 
             {/* Tools Grid: Shows all the tools categorized in boxes */}
-            <div className="max-w-7xl mx-auto px-6 pb-24">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 pb-12 md:pb-24">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {/* Loop through the tools list and create a 'ToolCard' component for each one */}
                     {tools.map((tool, index) => (

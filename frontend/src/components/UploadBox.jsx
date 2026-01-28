@@ -17,7 +17,7 @@ const UploadBox = ({ onFileSelect, selectedFile, onClear, accept, supportText })
 
     if (selectedFile) {
         return (
-            <div className="w-full p-8 border-2 border-dashed border-blue-200 bg-blue-50 rounded-2xl flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
+            <div className="w-full p-6 md:p-8 border-2 border-dashed border-blue-200 bg-blue-50 rounded-2xl flex flex-col items-center justify-center animate-in fade-in zoom-in duration-300">
                 <FileText size={48} className="text-blue-500 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-800 mb-1">{selectedFile.name}</h3>
                 <p className="text-sm text-gray-500 mb-4">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
@@ -34,7 +34,7 @@ const UploadBox = ({ onFileSelect, selectedFile, onClear, accept, supportText })
     return (
         <div
             {...getRootProps()}
-            className={`w-full p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 flex flex-col items-center justify-center text-center
+            className={`w-full p-8 md:p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 flex flex-col items-center justify-center text-center
         ${isDragActive ? 'border-blue-500 bg-blue-50 scale-[1.02]' : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'}`}
         >
             <input {...getInputProps()} />

@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import ESignPage from './pages/ESignPage';
 import PdfTools from './pages/PdfTools';
@@ -32,6 +32,31 @@ const ProtectedAdminRoute = ({ children }) => {
 
 function AppContent() {
   const { showAuthModal, setShowAuthModal } = useAuth();
+  const { pathname } = useLocation();
+
+  // Automatically scroll to top when the route path changes
+  useEffect(() => {
+    // Prevent browser from restoring scroll position
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // Immediate scroll (fixes desktop and most mobile)
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant'
+    });
+
+    // Fallback for some mobile browsers (safari/chrome mobile sometimes needs a tick)
+    const timeoutId = setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.body.scrollTo(0, 0);
+      document.documentElement.scrollTo(0, 0);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">

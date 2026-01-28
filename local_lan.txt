@@ -1,0 +1,18 @@
+To run the code on LAN (Local Area Network):
+
+1. **Backend Server**: running on `http://192.168.1.31:5000`
+2. **Frontend Application**: running on `http://192.168.1.31:5174`
+
+**Instructions:**
+- Connect your mobile or other devices to the SAME Wi-Fi network as this computer.
+- Open the browser on your device.
+- Go to: `http://192.168.1.31:5174`
+
+**Troubleshooting:**
+- If the frontend doesn't load, ensure your firewall allows Node.js/Vite connections.
+- If the backend API calls fail, check that `http://192.168.1.31:5000` is reachable.
+
+Current IP Config:
+IP: 192.168.1.31
+Frontend Port: 5174 (was 5173 but it was busy)
+Backend Port: 5000

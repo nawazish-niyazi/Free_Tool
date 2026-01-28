@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
-import { Plus, Trash2, Download, Loader2, Building2, User, Receipt, PlusCircle, AlertCircle, X, Save, Edit, RefreshCcw, Eye } from 'lucide-react';
+import { Plus, Trash2, Download, Loader2, Building2, User, Receipt, PlusCircle, AlertCircle, X, Save, Edit, RefreshCcw, Eye, Palette, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import InvoiceHistory from '../components/InvoiceHistory';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -30,8 +30,8 @@ const InvoiceGenerator = () => {
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         currency: 'INR',
         notes: '',
-        tax: 0,
-        discount: 0,
+        tax: '',
+        discount: '',
         paymentMode: '',
         business: {
             name: '',
@@ -45,9 +45,8 @@ const InvoiceGenerator = () => {
             email: '',
             phone: ''
         },
-        items: [
-            { id: Date.now(), description: '', quantity: 1, unitPrice: 0 }
-        ]
+        items: [],
+        templateId: 'classic' // Default template
     });
 
     const [totals, setTotals] = useState({
@@ -59,6 +58,7 @@ const InvoiceGenerator = () => {
 
     const [showBusinessModal, setShowBusinessModal] = useState(false);
     const [showItemModal, setShowItemModal] = useState(false);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
     const [businessSaved, setBusinessSaved] = useState(false);
 
     const dataURLtoFile = (dataurl, filename) => {
@@ -86,7 +86,7 @@ const InvoiceGenerator = () => {
         const savedData = localStorage.getItem(businessKey);
         const setupSkipped = localStorage.getItem(skipKey);
 
-        if (isLoggedIn && savedData) {
+        if (savedData) {
             const parsedData = JSON.parse(savedData);
             setInvoice(prev => ({
                 ...prev,
@@ -94,7 +94,8 @@ const InvoiceGenerator = () => {
                     name: parsedData.name || '',
                     address: parsedData.address || '',
                     email: parsedData.email || '',
-                    phone: parsedData.phone || ''
+                    phone: parsedData.phone || '',
+                    logo: parsedData.logo || null
                 }
             }));
             if (parsedData.logo) {
@@ -115,12 +116,13 @@ const InvoiceGenerator = () => {
                 dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 currency: 'INR',
                 notes: '',
-                tax: 0,
-                discount: 0,
+                tax: '',
+                discount: '',
                 paymentMode: '',
                 business: { name: '', address: '', email: '', phone: '' },
                 client: { name: '', address: '', email: '', phone: '' },
-                items: [{ id: Date.now(), description: '', quantity: 1, unitPrice: 0 }]
+                items: [],
+                templateId: 'classic'
             });
             setLogoPreview(null);
             setLogo(null);
@@ -147,7 +149,8 @@ const InvoiceGenerator = () => {
                 name: data.name,
                 address: data.address,
                 email: data.email,
-                phone: data.phone
+                phone: data.phone,
+                logo: data.logo
             }
         }));
         if (data.logo) {
@@ -239,7 +242,6 @@ const InvoiceGenerator = () => {
     };
 
     const removeItem = (id) => {
-        if (invoice.items.length === 1) return;
         setInvoice(prev => ({
             ...prev,
             items: prev.items.filter(item => item.id !== id)
@@ -258,14 +260,28 @@ const InvoiceGenerator = () => {
         }));
     };
 
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [showCropModal, setShowCropModal] = useState(false);
+    const [cropShape, setCropShape] = useState('rect');
+
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setLogo(file);
             const reader = new FileReader();
-            reader.onloadend = () => setLogoPreview(reader.result);
+            reader.onloadend = () => {
+                setImageToCrop(reader.result);
+                setCropShape('rect'); // Default to rect
+                setShowCropModal(true);
+            };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleCropComplete = (croppedDataUrl) => {
+        setLogoPreview(croppedDataUrl);
+        const file = dataURLtoFile(croppedDataUrl, 'business-logo.png');
+        setLogo(file);
+        setShowCropModal(false);
     };
 
 
@@ -292,7 +308,13 @@ const InvoiceGenerator = () => {
         setLoading(true);
         const formData = new FormData();
         if (logo) formData.append('logo', logo);
-        formData.append('data', JSON.stringify(invoice));
+
+        // Optimize: Don't send large base64 logo in the JSON data if we are sending it as a file
+        const invoiceToUpload = {
+            ...invoice,
+            business: { ...invoice.business, logo: logo ? undefined : invoice.business.logo }
+        };
+        formData.append('data', JSON.stringify(invoiceToUpload));
 
         try {
             const response = await axios.post(`${import.meta.env.VITE_API_URL}/invoice/generate`, formData, {
@@ -314,7 +336,8 @@ const InvoiceGenerator = () => {
             if (error.response?.status === 401) {
                 setShowAuthModal(true);
             } else {
-                alert('Failed to generate invoice. Please try again.');
+                const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+                alert(`Failed to generate invoice: ${errorMessage}`);
             }
         } finally {
             setLoading(false);
@@ -332,7 +355,13 @@ const InvoiceGenerator = () => {
         setPreviewLoading(true);
         const formData = new FormData();
         if (logo) formData.append('logo', logo);
-        formData.append('data', JSON.stringify(invoice));
+
+        // Optimize: Don't send large base64 logo in the JSON data
+        const invoiceToUpload = {
+            ...invoice,
+            business: { ...invoice.business, logo: logo ? undefined : invoice.business.logo }
+        };
+        formData.append('data', JSON.stringify(invoiceToUpload));
 
         try {
             const response = await axios.post(`${import.meta.env.VITE_API_URL}/invoice/generate`, formData, {
@@ -344,7 +373,8 @@ const InvoiceGenerator = () => {
             setShowPreviewModal(true);
         } catch (error) {
             console.error('Error previewing invoice:', error);
-            alert('Failed to generate preview. Please try again.');
+            const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+            alert(`Failed to generate preview: ${errorMessage}`);
         } finally {
             setPreviewLoading(false);
         }
@@ -354,7 +384,7 @@ const InvoiceGenerator = () => {
         <div className="min-h-screen bg-slate-50">
             <Navbar />
 
-            <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
                         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Generator</h1>
@@ -367,6 +397,14 @@ const InvoiceGenerator = () => {
                             >
                                 <RefreshCcw size={10} />
                                 Reset Profile
+                            </button>
+                            <button
+                                onClick={() => setShowTemplateModal(true)}
+                                className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
+                                title="Change Invoice Design"
+                            >
+                                <Palette size={10} />
+                                Change Template
                             </button>
                         </div>
                     </div>
@@ -404,12 +442,12 @@ const InvoiceGenerator = () => {
                     {/* Main Form */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Header Section */}
-                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <label className="block">
                                         <span className="text-sm font-bold text-slate-700 mb-2 block uppercase tracking-wider">Business Logo</span>
-                                        <div className="relative group cursor-pointer border-2 border-dashed border-slate-200 rounded-3xl p-4 transition-all hover:bg-slate-50 hover:border-blue-400">
+                                        <div className="relative group cursor-pointer border-2 border-dashed border-slate-200 rounded-3xl p-3 md:p-4 transition-all hover:bg-slate-50 hover:border-blue-400">
                                             <input
                                                 type="file"
                                                 className="absolute inset-0 opacity-0 cursor-pointer"
@@ -473,7 +511,7 @@ const InvoiceGenerator = () => {
 
                         {/* Addresses */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full">
+                            <div className="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-2 text-blue-600">
                                         <Building2 size={24} />
@@ -521,7 +559,7 @@ const InvoiceGenerator = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full">
+                            <div className="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col h-full">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-2 text-indigo-600">
                                         <User size={24} />
@@ -576,7 +614,7 @@ const InvoiceGenerator = () => {
 
                         {/* Items Table */}
                         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="p-8 border-b border-slate-50 flex justify-between items-center">
+                            <div className="p-4 md:p-8 border-b border-slate-50 flex justify-between items-center">
                                 <div className="flex items-center gap-2 text-slate-900">
                                     <Receipt size={24} />
                                     <h3 className="text-lg font-black tracking-tight uppercase">Line Items</h3>
@@ -589,77 +627,111 @@ const InvoiceGenerator = () => {
                                 </button>
                             </div>
 
-                            <div className="p-8 space-y-4">
+                            <div className="p-4 md:p-8 space-y-4">
                                 <AnimatePresence initial={false}>
-                                    {invoice.items.map((item, index) => (
-                                        <motion.div
-                                            key={item.id}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            className="group p-6 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all"
-                                        >
-                                            <div className="flex flex-col gap-4">
-                                                {/* First Line: Product Name and Delete Button */}
-                                                <div className="flex justify-between items-start gap-4">
-                                                    <div className="flex-1">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product Name</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Enter product name"
-                                                            value={item.description}
-                                                            onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                                                            className="w-full p-0 bg-transparent border-0 focus:ring-0 text-lg font-bold text-slate-900 placeholder:text-slate-300 outline-none"
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        onClick={() => removeItem(item.id)}
-                                                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                                        title="Remove item"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-
-                                                {/* Second Line: Qty, Price, Total */}
-                                                <div className="grid grid-cols-3 gap-6 pt-4 border-t border-slate-100">
-                                                    <div>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Quantity</label>
-                                                        <input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => handleItemChange(item.id, 'quantity', parseFloat(e.target.value))}
-                                                            className="w-full bg-white px-3 py-2 rounded-xl border-0 font-bold text-slate-700 outline-none text-sm"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Price</label>
-                                                        <div className="relative">
-                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                                    {invoice.items.length === 0 ? (
+                                        <div className="text-center py-12 text-slate-400">
+                                            <p className="text-sm font-medium mb-2">No items added yet</p>
+                                            <p className="text-xs">Click "Add Item" to start building your invoice</p>
+                                        </div>
+                                    ) : (
+                                        invoice.items.map((item, index) => (
+                                            <motion.div
+                                                key={item.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 20 }}
+                                                className="group p-4 md:p-6 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-all"
+                                            >
+                                                <div className="flex flex-col gap-4">
+                                                    {/* First Line: Product Name and Delete Button */}
+                                                    <div className="flex justify-between items-start gap-4">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product Name</label>
                                                             <input
-                                                                type="number"
-                                                                value={item.unitPrice}
-                                                                onChange={(e) => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value))}
-                                                                className="w-full bg-white pl-7 pr-3 py-2 rounded-xl border-0 font-bold text-slate-700 outline-none text-sm"
+                                                                type="text"
+                                                                placeholder="Enter product name"
+                                                                value={item.description}
+                                                                onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                                                                className="w-full p-0 bg-transparent border-0 focus:ring-0 text-lg font-bold text-slate-900 placeholder:text-slate-300 outline-none"
                                                             />
                                                         </div>
+                                                        <button
+                                                            onClick={() => removeItem(item.id)}
+                                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                            title="Remove item"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Total</label>
-                                                        <div className="py-2 text-lg font-black text-blue-600">
-                                                            ₹{(item.quantity * item.unitPrice).toFixed(2)}
+
+                                                    {/* Second Line: Qty, Price, Total */}
+                                                    <div className="grid grid-cols-3 gap-6 pt-4 border-t border-slate-100">
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Quantity</label>
+                                                            <input
+                                                                type="number"
+                                                                value={item.quantity}
+                                                                placeholder="1"
+                                                                onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                                                className="w-full bg-white px-3 py-2 rounded-xl border-0 font-bold text-slate-700 outline-none text-sm"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Price</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={item.unitPrice}
+                                                                    placeholder="0"
+                                                                    onChange={(e) => handleItemChange(item.id, 'unitPrice', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                                                    className="w-full bg-white pl-7 pr-3 py-2 rounded-xl border-0 font-bold text-slate-700 outline-none text-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Total</label>
+                                                            <div className="py-2 text-lg font-black text-blue-600">
+                                                                ₹{((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                            </motion.div>
+                                        ))
+                                    )}
                                 </AnimatePresence>
                             </div>
                         </div>
 
+                        {/* Payment Mode */}
+                        <div className="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-sm font-bold text-slate-700 block uppercase tracking-wider">Payment Mode</label>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider italic">Optional</span>
+                            </div>
+                            <div className="relative">
+                                <select
+                                    value={invoice.paymentMode}
+                                    onChange={(e) => handleInputChange(null, 'paymentMode', e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium appearance-none cursor-pointer"
+                                >
+                                    <option value="">Select Payment Mode</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Card">Card</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Notes */}
-                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                        <div className="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100">
                             <label className="text-sm font-bold text-slate-700 mb-2 block uppercase tracking-wider">Notes / Payment Terms</label>
                             <textarea
                                 rows="3"
@@ -674,7 +746,7 @@ const InvoiceGenerator = () => {
 
                     {/* Summary Sidebar */}
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl shadow-blue-100 sticky top-12">
+                        <div className="bg-slate-900 text-white p-5 md:p-8 rounded-[40px] shadow-2xl shadow-blue-100 sticky top-12">
                             <h3 className="text-lg font-black mb-8 uppercase tracking-widest text-slate-400">Total Summary</h3>
 
                             <div className="space-y-6">
@@ -690,7 +762,8 @@ const InvoiceGenerator = () => {
                                             <input
                                                 type="number"
                                                 value={invoice.tax}
-                                                onChange={(e) => handleInputChange(null, 'tax', parseFloat(e.target.value))}
+                                                placeholder="0"
+                                                onChange={(e) => handleInputChange(null, 'tax', e.target.value === '' ? '' : parseFloat(e.target.value))}
                                                 className="w-12 bg-transparent text-slate-900 text-right font-black py-1 outline-none"
                                             />
                                             <span className="text-slate-400 text-xs font-black">%</span>
@@ -708,7 +781,8 @@ const InvoiceGenerator = () => {
                                             <input
                                                 type="number"
                                                 value={invoice.discount}
-                                                onChange={(e) => handleInputChange(null, 'discount', parseFloat(e.target.value))}
+                                                placeholder="0"
+                                                onChange={(e) => handleInputChange(null, 'discount', e.target.value === '' ? '' : parseFloat(e.target.value))}
                                                 className="w-12 bg-transparent text-slate-900 text-right font-black py-1 outline-none"
                                             />
                                             <span className="text-slate-400 text-xs font-black">%</span>
@@ -719,28 +793,7 @@ const InvoiceGenerator = () => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <div className="flex justify-between items-center text-slate-400">
-                                        <span className="font-bold">Payment Mode</span>
-                                        <div className="flex items-center bg-white rounded-lg px-2 shadow-sm">
-                                            <select
-                                                value={invoice.paymentMode}
-                                                onChange={(e) => handleInputChange(null, 'paymentMode', e.target.value)}
-                                                className="bg-transparent text-slate-900 text-left font-black py-1.5 outline-none text-xs min-w-[100px] cursor-pointer"
-                                            >
-                                                <option value="">Select Mode</option>
-                                                <option value="Cash">Cash</option>
-                                                <option value="UPI">UPI</option>
-                                                <option value="Bank Transfer">Bank Transfer</option>
-                                                <option value="Card">Card</option>
-                                                <option value="Cheque">Cheque</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-tighter italic">Optional</span>
-                                    </div>
-                                </div>
+
 
                                 <div className="pt-8 border-t border-slate-800">
                                     <div className="flex justify-between items-end">
@@ -812,10 +865,30 @@ const InvoiceGenerator = () => {
                 onAdd={addItemToList}
             />
 
+            <TemplateModal
+                isOpen={showTemplateModal}
+                onClose={() => setShowTemplateModal(false)}
+                currentTemplate={invoice.templateId}
+                onSelect={(id) => {
+                    handleInputChange(null, 'templateId', id);
+                    setShowTemplateModal(false);
+                }}
+                invoice={invoice}
+            />
+
             <PreviewModal
                 isOpen={showPreviewModal}
                 onClose={() => setShowPreviewModal(false)}
                 url={previewUrl}
+            />
+
+            <CropModal
+                isOpen={showCropModal}
+                image={imageToCrop}
+                shape={cropShape}
+                onClose={() => setShowCropModal(false)}
+                onCropComplete={handleCropComplete}
+                onShapeChange={setCropShape}
             />
         </div>
     );
@@ -920,8 +993,8 @@ const PreviewModal = ({ isOpen, onClose, url }) => {
 const ItemModal = ({ isOpen, onClose, onAdd }) => {
     const [itemData, setItemData] = useState({
         description: '',
-        quantity: 1,
-        unitPrice: 0
+        quantity: '',
+        unitPrice: ''
     });
 
     if (!isOpen) return null;
@@ -962,7 +1035,8 @@ const ItemModal = ({ isOpen, onClose, onAdd }) => {
                                     <input
                                         type="number"
                                         value={itemData.quantity}
-                                        onChange={(e) => setItemData({ ...itemData, quantity: parseFloat(e.target.value) || 0 })}
+                                        placeholder="1"
+                                        onChange={(e) => setItemData({ ...itemData, quantity: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                                         className="w-full px-5 py-3.5 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold"
                                     />
                                 </div>
@@ -973,7 +1047,8 @@ const ItemModal = ({ isOpen, onClose, onAdd }) => {
                                         <input
                                             type="number"
                                             value={itemData.unitPrice}
-                                            onChange={(e) => setItemData({ ...itemData, unitPrice: parseFloat(e.target.value) || 0 })}
+                                            placeholder="0"
+                                            onChange={(e) => setItemData({ ...itemData, unitPrice: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                                             className="w-full px-5 py-3.5 pl-8 bg-slate-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all text-sm font-bold"
                                         />
                                     </div>
@@ -1306,6 +1381,217 @@ const getCroppedImg = async (imageSrc, pixelCrop, isRound) => {
     );
 
     return canvas.toDataURL('image/png');
+};
+
+const TemplateModal = ({ isOpen, onClose, currentTemplate, onSelect, invoice }) => {
+    // Helper to get logo or placeholder
+    const renderLogo = (x, y, size = 40) => {
+        if (invoice?.business?.logo) {
+            return (
+                <image
+                    x={x}
+                    y={y}
+                    width={size}
+                    height={size}
+                    href={invoice.business.logo}
+                    preserveAspectRatio="xMidYMid meet"
+                />
+            );
+        }
+        return (
+            <g transform={`translate(${x}, ${y})`}>
+                <rect width={size} height={size} fill="#e2e8f0" rx="4" />
+                <text x={size / 2} y={size / 2 + 2} fontSize="8" fill="#64748b" textAnchor="middle" fontWeight="bold">LOGO</text>
+            </g>
+        );
+    };
+
+    const businessName = invoice?.business?.name || "Your Business";
+    const clientName = invoice?.client?.name || "Client Name";
+
+    const templates = [
+        {
+            id: 'classic',
+            name: 'Classic',
+            preview: (
+                <svg viewBox="0 0 210 297" className="w-full h-full shadow-md bg-white" fill="none">
+                    <rect width="210" height="297" fill="white" />
+
+                    {/* Header */}
+                    {renderLogo(20, 20, 30)}
+
+                    <text x="190" y="30" fontSize="14" fill="#1e293b" fontWeight="bold" textAnchor="end">INVOICE</text>
+                    <text x="190" y="40" fontSize="6" fill="#64748b" textAnchor="end">#INV-001</text>
+
+                    {/* Addresses */}
+                    <text x="20" y="70" fontSize="6" fill="#94a3b8" fontWeight="bold" textTransform="uppercase">From</text>
+                    <text x="20" y="78" fontSize="7" fill="#334155" fontWeight="bold">{businessName}</text>
+                    <text x="20" y="86" fontSize="5" fill="#64748b">123 Business Rd</text>
+
+                    <text x="120" y="70" fontSize="6" fill="#94a3b8" fontWeight="bold" textTransform="uppercase">Bill To</text>
+                    <text x="120" y="78" fontSize="7" fill="#334155" fontWeight="bold">{clientName}</text>
+                    <text x="120" y="86" fontSize="5" fill="#64748b">456 Client St</text>
+
+                    {/* Table */}
+                    <rect x="20" y="110" width="170" height="12" fill="#f8fafc" />
+                    <text x="25" y="118" fontSize="5" fill="#64748b" fontWeight="bold">ITEM DESCRIPTION</text>
+                    <text x="170" y="118" fontSize="5" fill="#64748b" fontWeight="bold" textAnchor="end">AMOUNT</text>
+
+                    <line x1="20" y1="122" x2="190" y2="122" stroke="#e2e8f0" strokeWidth="0.5" />
+
+                    {/* Rows */}
+                    <text x="25" y="132" fontSize="6" fill="#334155">Web Development</text>
+                    <text x="170" y="132" fontSize="6" fill="#334155" textAnchor="end">$1,000.00</text>
+                    <line x1="20" y1="138" x2="190" y2="138" stroke="#f1f5f9" strokeWidth="0.5" />
+
+                    <text x="25" y="146" fontSize="6" fill="#334155">Design Services</text>
+                    <text x="170" y="146" fontSize="6" fill="#334155" textAnchor="end">$500.00</text>
+                    <line x1="20" y1="152" x2="190" y2="152" stroke="#f1f5f9" strokeWidth="0.5" />
+
+                    {/* Totals */}
+                    <rect x="110" y="180" width="80" height="25" fill="#f8fafc" rx="2" />
+                    <text x="120" y="190" fontSize="6" fill="#64748b">Total Due:</text>
+                    <text x="180" y="196" fontSize="10" fill="#0f172a" fontWeight="bold" textAnchor="end">$1,500.00</text>
+                </svg>
+            )
+        },
+        {
+            id: 'modern',
+            name: 'Modern Blue',
+            preview: (
+                <svg viewBox="0 0 210 297" className="w-full h-full shadow-md bg-white" fill="none">
+                    <rect width="210" height="297" fill="white" />
+                    {/* Blue Header */}
+                    <path d="M0 0h210v60H0z" fill="#2563eb" />
+                    {renderLogo(20, 15, 30)}
+
+                    <text x="190" y="38" fontSize="16" fill="white" fontWeight="bold" textAnchor="end">INVOICE</text>
+
+                    {/* Cards */}
+                    <rect x="20" y="80" width="80" height="35" fill="#eff6ff" rx="4" />
+                    <text x="30" y="92" fontSize="5" fill="#3b82f6" fontWeight="bold" textTransform="uppercase">From</text>
+                    <text x="30" y="102" fontSize="7" fill="#1e3a8a" fontWeight="bold">{businessName}</text>
+
+                    <rect x="110" y="80" width="80" height="35" fill="#eff6ff" rx="4" />
+                    <text x="120" y="92" fontSize="5" fill="#3b82f6" fontWeight="bold" textTransform="uppercase">Bill To</text>
+                    <text x="120" y="102" fontSize="7" fill="#1e3a8a" fontWeight="bold">{clientName}</text>
+
+                    {/* Table */}
+                    <rect x="20" y="135" width="170" height="14" fill="#bfdbfe" rx="2" />
+                    <text x="30" y="144" fontSize="5" fill="#1e40af" fontWeight="bold">DESCRIPTION</text>
+                    <text x="180" y="144" fontSize="5" fill="#1e40af" fontWeight="bold" textAnchor="end">TOTAL</text>
+
+                    <rect x="20" y="155" width="170" height="12" fill="white" />
+                    <text x="30" y="164" fontSize="6" fill="#334155">Project A</text>
+                    <text x="180" y="164" fontSize="6" fill="#334155" textAnchor="end">$1,000.00</text>
+
+                    <rect x="20" y="167" width="170" height="12" fill="#f8fafc" />
+                    <text x="30" y="176" fontSize="6" fill="#334155">Service B</text>
+                    <text x="180" y="176" fontSize="6" fill="#334155" textAnchor="end">$500.00</text>
+
+                    {/* Total */}
+                    <rect x="120" y="220" width="70" height="24" fill="#eff6ff" rx="4" stroke="#bfdbfe" />
+                    <text x="130" y="230" fontSize="5" fill="#3b82f6" fontWeight="bold">GRAND TOTAL</text>
+                    <text x="180" y="238" fontSize="10" fill="#1d4ed8" fontWeight="bold" textAnchor="end">$1,500</text>
+                </svg>
+            )
+        },
+        {
+            id: 'minimal',
+            name: 'Minimalist',
+            preview: (
+                <svg viewBox="0 0 210 297" className="w-full h-full shadow-md bg-white" fill="none">
+                    <rect width="210" height="297" fill="white" />
+
+                    {/* Header */}
+                    <text x="20" y="40" fontSize="20" fill="black" fontFamily="serif" fontWeight="bold">INVOICE</text>
+                    <line x1="20" y1="50" x2="190" y2="50" stroke="black" strokeWidth="2" />
+
+                    {/* Addresses Grid */}
+                    <text x="20" y="70" fontSize="6" fill="black" fontFamily="monospace" fontWeight="bold">FROM:</text>
+                    <text x="20" y="80" fontSize="7" fill="black" fontFamily="monospace">{businessName}</text>
+                    {renderLogo(20, 90, 20)}
+
+                    <text x="120" y="70" fontSize="6" fill="black" fontFamily="monospace" fontWeight="bold">TO:</text>
+                    <text x="120" y="80" fontSize="7" fill="black" fontFamily="monospace">{clientName}</text>
+
+                    <line x1="105" y1="65" x2="105" y2="100" stroke="#e5e7eb" />
+
+                    {/* Table */}
+                    <line x1="20" y1="120" x2="190" y2="120" stroke="black" strokeWidth="1" />
+                    <text x="20" y="128" fontSize="6" fill="black" fontFamily="monospace" fontWeight="bold">ITEM</text>
+                    <text x="190" y="128" fontSize="6" fill="black" fontFamily="monospace" fontWeight="bold" textAnchor="end">PRICE</text>
+                    <line x1="20" y1="132" x2="190" y2="132" stroke="black" strokeWidth="1" />
+
+                    <text x="20" y="144" fontSize="7" fill="black" fontFamily="monospace">Consulting</text>
+                    <text x="190" y="144" fontSize="7" fill="black" fontFamily="monospace" textAnchor="end">1,000.00</text>
+                    <line x1="20" y1="150" x2="190" y2="150" stroke="#e5e7eb" />
+
+                    <text x="20" y="160" fontSize="7" fill="black" fontFamily="monospace">Development</text>
+                    <text x="190" y="160" fontSize="7" fill="black" fontFamily="monospace" textAnchor="end">500.00</text>
+                    <line x1="20" y1="166" x2="190" y2="166" stroke="#e5e7eb" />
+
+                    {/* Total Box */}
+                    <rect x="110" y="210" width="80" height="30" fill="white" stroke="black" strokeWidth="2" />
+                    <text x="120" y="222" fontSize="6" fill="black" fontFamily="monospace" fontWeight="bold">TOTAL</text>
+                    <text x="180" y="232" fontSize="12" fill="black" fontFamily="monospace" fontWeight="bold" textAnchor="end">$1,500</text>
+                </svg>
+            )
+        },
+    ];
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="bg-white w-full max-w-4xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                >
+                    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900">Choose a Template</h2>
+                            <p className="text-slate-500 text-sm font-medium mt-1">Select a professional design for your invoice.</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <X size={24} className="text-slate-400" />
+                        </button>
+                    </div>
+
+                    <div className="p-8 overflow-y-auto bg-slate-50/50">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {templates.map((template) => (
+                                <button
+                                    key={template.id}
+                                    onClick={() => onSelect(template.id)}
+                                    className={`group relative flex flex-col items-center transition-all duration-200 outline-none`}
+                                >
+                                    <div className={`relative w-full aspect-[1/1.4] rounded-2xl overflow-hidden border-4 transition-all shadow-lg ${currentTemplate === template.id ? 'border-blue-600 ring-4 ring-blue-100 scale-[1.02]' : 'border-white group-hover:border-blue-300 group-hover:-translate-y-1'}`}>
+                                        {template.preview}
+
+                                        {/* Overlay for selected state */}
+                                        {currentTemplate === template.id && (
+                                            <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
+                                                <div className="bg-blue-600 text-white p-3 rounded-full shadow-xl scale-110">
+                                                    <Check size={24} strokeWidth={3} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mt-4 text-center">
+                                        <h3 className={`font-bold text-lg ${currentTemplate === template.id ? 'text-blue-600' : 'text-slate-700'}`}>{template.name}</h3>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
 };
 
 export default InvoiceGenerator;

@@ -6,7 +6,7 @@ const ToolCard = ({ title, description, icon: Icon, to, color = "bg-white" }) =>
     return (
         <Link
             to={to}
-            className={`group relative p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 ${color} flex flex-col justify-between overflow-hidden`}
+            className={`group relative p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 ${color} flex flex-col justify-between overflow-hidden`}
         >
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Icon size={64} />

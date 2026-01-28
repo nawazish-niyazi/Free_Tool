@@ -143,7 +143,7 @@ const WorkerSignup = () => {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
             {/* Header */}
             <div className="bg-white shadow-sm border-b">
-                <div className="max-w-4xl mx-auto px-4 py-6">
+                <div className="max-w-4xl mx-auto px-3 md:px-4 py-4 md:py-6">
                     <div className="flex items-center gap-3">
                         <div className="bg-blue-600 p-3 rounded-xl">
                             <UserPlus className="w-8 h-8 text-white" />
@@ -157,9 +157,9 @@ const WorkerSignup = () => {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="max-w-4xl mx-auto px-3 md:px-4 py-6 md:py-12">
                 {success ? (
-                    <div className="bg-white rounded-3xl shadow-xl p-12 text-center">
+                    <div className="bg-white rounded-3xl shadow-xl p-6 md:p-12 text-center">
                         <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="w-12 h-12 text-green-600" />
                         </div>
@@ -175,9 +175,9 @@ const WorkerSignup = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-3xl shadow-xl p-8">
+                    <div className="bg-white rounded-3xl shadow-xl p-4 md:p-8">
                         {/* Info Banner */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-6 mb-8">
                             <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5" />
                                 Important Information
@@ -192,7 +192,7 @@ const WorkerSignup = () => {
 
                         {/* Error Message */}
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl mb-6 flex items-center gap-3">
+                            <div className="bg-red-50 border border-red-200 text-red-800 px-4 md:px-6 py-3 md:py-4 rounded-xl mb-6 flex items-center gap-3">
                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                                 <span>{error}</span>
                             </div>

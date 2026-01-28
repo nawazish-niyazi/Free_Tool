@@ -270,7 +270,7 @@ const QrGenerator = () => {
         <div className="min-h-screen bg-gray-50 pb-20">
             <Navbar />
 
-            <div className="max-w-5xl mx-auto px-6 py-12">
+            <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
                 <header className="text-center mb-12">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight uppercase">
                         Link to <span className="text-blue-600">QR Code</span>
@@ -297,7 +297,7 @@ const QrGenerator = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     {/* Left Panel: Input & Settings */}
-                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-8 space-y-8">
+                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 space-y-8">
                         {/* Dynamic Input based on Mode */}
                         {mode === 'single' ? (
                             <section>
@@ -349,7 +349,7 @@ const QrGenerator = () => {
                                             </div>
                                         )}
                                         {multiLinks.map((link, index) => (
-                                            <div key={index} className="bg-slate-50 p-4 rounded-3xl border border-slate-100 relative group animate-in fade-in slide-in-from-top-2">
+                                            <div key={index} className="bg-slate-50 p-3 md:p-4 rounded-3xl border border-slate-100 relative group animate-in fade-in slide-in-from-top-2">
                                                 <button
                                                     onClick={() => removeLinkField(index)}
                                                     className="absolute -top-2 -right-2 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors opacity-0 group-hover:opacity-100"
@@ -538,7 +538,7 @@ const QrGenerator = () => {
                     </div>
 
                     {/* Right Panel: Preview & Download */}
-                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-8 flex flex-col items-center sticky top-24">
+                    <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100 p-4 md:p-8 flex flex-col items-center sticky top-24">
                         <div className="flex w-full items-center justify-between mb-8">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Preview</label>
                             {mode === 'multi' && (
@@ -581,7 +581,7 @@ const QrGenerator = () => {
                                 {/* iPhone-style notch */}
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-900 rounded-b-2xl z-20"></div>
 
-                                <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-y-auto custom-scrollbar p-6 pt-10 flex flex-col items-center">
+                                <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-y-auto custom-scrollbar p-4 md:p-6 pt-8 md:pt-10 flex flex-col items-center">
                                     {logoPreview ? (
                                         <div className={`w-16 h-16 bg-white ${cropShape === 'round' ? 'rounded-full' : 'rounded-2xl'} flex items-center justify-center mb-4 shadow-md border border-gray-100 overflow-hidden p-1`}>
                                             <img src={logoPreview} className="max-w-full max-h-full object-contain" alt="Preview logo" />
@@ -599,7 +599,7 @@ const QrGenerator = () => {
                                     <div className="w-full space-y-3">
                                         {multiLinks.length > 0 ? (
                                             multiLinks.map((link, i) => (
-                                                <div key={i} className="w-full p-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group">
+                                                <div key={i} className="w-full p-2 md:p-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group">
                                                     <span className="text-[10px] font-black text-slate-800 truncate pr-2">{link.name || 'Untitled Link'}</span>
                                                     <ExternalLink size={10} className="text-slate-300" />
                                                 </div>
@@ -662,7 +662,7 @@ const QrGenerator = () => {
                         ) : myQRs.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {myQRs.map((qr) => (
-                                    <div key={qr._id} className="bg-white rounded-[32px] p-6 shadow-xl shadow-blue-900/5 border border-gray-100 flex flex-col group animate-in fade-in zoom-in-95 duration-500">
+                                    <div key={qr._id} className="bg-white rounded-[32px] p-4 md:p-6 shadow-xl shadow-blue-900/5 border border-gray-100 flex flex-col group animate-in fade-in zoom-in-95 duration-500">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="font-black text-gray-900 line-clamp-1">{qr.title || 'Untitled Collection'}</h3>

@@ -97,14 +97,14 @@ const Navbar = () => {
                             exit={{ opacity: 0, height: 0 }}
                             className="md:hidden bg-white border-t border-slate-50 overflow-hidden"
                         >
-                            <div className="px-4 py-6 space-y-4">
-                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Home</Link>
-                                <Link to="/pdf-tools" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">PDF Tools</Link>
-                                <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Image Tools</Link>
-                                <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">QR Generator</Link>
-                                <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Invoice Generator</Link>
+                            <div className="px-3 md:px-4 py-4 md:py-6 space-y-4">
+                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Home</Link>
+                                <Link to="/pdf-tools" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">PDF Tools</Link>
+                                <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Image Tools</Link>
+                                <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">QR Generator</Link>
+                                <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Invoice Generator</Link>
                                 {isLoggedIn && (
-                                    <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Local Help</Link>
+                                    <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Local Help</Link>
                                 )}
 
                                 <div className="pt-4 border-t border-slate-50">
@@ -154,7 +154,7 @@ const Navbar = () => {
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="relative bg-white rounded-[32px] shadow-2xl shadow-slate-900/20 w-full max-w-sm overflow-hidden"
                         >
-                            <div className="p-8 text-center">
+                            <div className="p-6 md:p-8 text-center">
                                 <div className="w-16 h-16 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
                                     <AlertCircle size={32} />
                                 </div>

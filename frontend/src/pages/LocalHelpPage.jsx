@@ -155,8 +155,8 @@ const LocalHelpPage = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
                 <Navbar />
-                <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 text-center shadow-xl shadow-blue-900/5 border border-gray-100">
+                <div className="flex-1 flex items-center justify-center p-3 md:p-6">
+                    <div className="max-w-md w-full bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-center shadow-xl shadow-blue-900/5 border border-gray-100">
                         <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
                             <Lock size={40} />
                         </div>
@@ -185,254 +185,223 @@ const LocalHelpPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-50">
             <Navbar />
 
-            <div className="max-w-7xl mx-auto px-6 py-12">
-                <div className="text-center mb-10">
-                    <div className="inline-flex py-2 px-4 bg-blue-50 text-blue-600 rounded-full font-bold text-[11px] uppercase tracking-widest mb-4 border border-blue-100 shadow-sm items-center gap-2">
-                        <Sparkles size={14} /> Verified Help Line
-                    </div>
-                    <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight uppercase">
-                        Local <span className="text-blue-600">Help Line</span>
+            <div className="max-w-4xl mx-auto px-3 md:px-4 py-6 md:py-8">
+                {/* Simplified Header */}
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-3">
+                        Local Help Line
                     </h1>
-                    <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto">
-                        Find verified professionals for all your home, automobile, and personal needs in your neighborhood.
+                    <p className="text-slate-600">
+                        Find verified professionals in your neighborhood
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    <div className="lg:col-span-3">
-                        <div className="bg-white rounded-[2rem] shadow-xl shadow-blue-900/5 border border-gray-100 p-6 sticky top-24">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                                    <Filter className="text-blue-600" size={20} /> Filters
-                                </h2>
-                                <button
-                                    onClick={seedData}
-                                    className="text-[9px] font-black text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-all uppercase tracking-wider"
-                                    title="Developer: Click to reset demo data"
-                                >
-                                    Reset Data
-                                </button>
-                            </div>
+                {/* Simplified Search Box */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-slate-700 mb-1">Select Location</label>
+                            <select
+                                value={selectedLocation}
+                                onChange={(e) => setSelectedLocation(e.target.value)}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                            >
+                                <option value="">All Locations</option>
+                                {LOCATIONS.map(loc => (
+                                    <option key={loc} value={loc.toLowerCase()}>{loc}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                            <div className="space-y-5">
-                                {/* Location Select */}
-                                <section>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Where?</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
-                                        <select
-                                            value={selectedLocation}
-                                            onChange={(e) => setSelectedLocation(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
-                                        >
-                                            <option value="">All Locations</option>
-                                            {LOCATIONS.map(loc => (
-                                                <option key={loc} value={loc.toLowerCase()}>{loc}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </section>
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-slate-700 mb-1">Select Category</label>
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => {
+                                    setSelectedCategory(e.target.value);
+                                    setSelectedService('');
+                                }}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                            >
+                                <option value="">All Categories</option>
+                                {CATEGORIES.map(cat => (
+                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                                {/* Category Select */}
-                                <section>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Category</label>
-                                    <div className="relative">
-                                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => {
-                                                setSelectedCategory(e.target.value);
-                                                setSelectedService('');
-                                            }}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
-                                        >
-                                            <option value="">All Categories</option>
-                                            {CATEGORIES.map(cat => (
-                                                <option key={cat.name} value={cat.name}>{cat.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </section>
-
-                                {/* Service (Sub-category) Select */}
-                                <section className={`transition-all duration-300 ${!selectedCategory ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 pl-1">Specific Service</label>
-                                    <div className="relative">
-                                        <ChevronRight className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
-                                        <select
-                                            value={selectedService}
-                                            onChange={(e) => setSelectedService(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:bg-white outline-none transition-all font-bold text-sm appearance-none cursor-pointer"
-                                        >
-                                            <option value="">{selectedCategory ? `All ${selectedCategory}` : "Select Category"}</option>
-                                            {availableServices.map(svc => (
-                                                <option key={svc} value={svc}>{svc}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </section>
-
-                                <button
-                                    onClick={handleSearch}
-                                    disabled={loading}
-                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-lg shadow-blue-200 transition-all flex justify-center items-center gap-2.5 text-base disabled:opacity-50 group mt-2"
-                                >
-                                    {loading ? <Loader2 className="animate-spin" size={20} /> : <>Apply Search <Search size={20} className="group-hover:translate-x-0.5 transition-transform" /></>}
-                                </button>
-                            </div>
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-slate-700 mb-1">Service Type</label>
+                            <select
+                                value={selectedService}
+                                onChange={(e) => setSelectedService(e.target.value)}
+                                disabled={!selectedCategory}
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <option value="">{selectedCategory ? `All ${selectedCategory}` : "First Select Category"}</option>
+                                {availableServices.map(svc => (
+                                    <option key={svc} value={svc}>{svc}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
-                    {/* Results List */}
-                    <div className="lg:col-span-9">
-                        {loading && workers.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
-                                <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-                                <p className="font-bold text-slate-500 uppercase tracking-widest">Searching Professionals...</p>
-                            </div>
-                        ) : workers.length > 0 ? (
-                            <div className="space-y-8">
-                                <div className="flex items-center justify-between mb-4 px-2">
-                                    <h3 className="font-black text-slate-800 text-xl uppercase tracking-tight">
-                                        {workers.length} Professionals <span className="text-blue-600">Found</span>
-                                    </h3>
-                                </div>
-                                {workers.map(worker => (
-                                    <div key={worker._id} className="bg-white rounded-[2rem] p-6 md:p-8 border border-gray-100 shadow-2xl shadow-blue-900/5 hover:translate-x-1.5 transition-all group overflow-hidden relative">
-                                        <div className="flex flex-col md:flex-row gap-6 md:gap-8 relative z-10">
-                                            {/* Avatar & Basic Info */}
-                                            <div className="flex flex-col items-center text-center md:w-40 shrink-0">
-                                                <div className="w-20 h-20 bg-blue-50 rounded-[1.5rem] flex items-center justify-center text-blue-600 mb-3 shadow-inner border border-blue-100 group-hover:scale-105 transition-transform">
-                                                    <User size={40} />
+                    <button
+                        onClick={handleSearch}
+                        disabled={loading}
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2 text-lg disabled:opacity-70"
+                    >
+                        {loading ? <Loader2 className="animate-spin" size={24} /> : (
+                            <>
+                                <Search size={22} /> Find Professionals
+                            </>
+                        )}
+                    </button>
+
+                    {/* Developer Tool - Subtle */}
+                    <div className="mt-2 text-right">
+                        <button
+                            onClick={seedData}
+                            className="text-xs text-slate-400 hover:text-blue-500 underline"
+                        >
+                            Reset Demo Data
+                        </button>
+                    </div>
+                </div>
+
+                {/* Results List */}
+                <div>
+                    {loading && workers.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-4" />
+                            <p className="text-slate-500 font-medium">Searching for help nearby...</p>
+                        </div>
+                    ) : workers.length > 0 ? (
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-bold text-slate-800 px-2">
+                                {workers.length} Professionals Found
+                            </h3>
+                            {workers.map(worker => (
+                                <div key={worker._id} className="bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex flex-col sm:flex-row gap-5">
+                                        {/* Avatar & Basic Info */}
+                                        <div className="flex sm:flex-col items-center sm:w-32 shrink-0 gap-4 sm:gap-2">
+                                            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                                <User size={32} className="sm:w-10 sm:h-10" />
+                                            </div>
+                                            <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-md text-sm font-bold border border-amber-100">
+                                                <Star size={14} className="fill-current" /> {worker.rating}
+                                            </div>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-1">
+                                            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                                                <div>
+                                                    <h4 className="text-xl font-bold text-slate-900 mb-1">{worker.name}</h4>
+                                                    <div className="flex flex-wrap gap-2 text-sm text-slate-600 mb-2">
+                                                        <span className="flex items-center gap-1">
+                                                            <Briefcase size={14} className="text-slate-400" />
+                                                            {worker.service}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <MapPin size={14} className="text-slate-400" />
+                                                            {worker.location}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock size={14} className="text-slate-400" />
+                                                            {worker.experience} Exp.
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1 text-amber-500 font-black text-base mb-1 bg-amber-50 px-2.5 py-1 rounded-full">
-                                                    <Star size={16} className="fill-current" /> {worker.rating}
-                                                </div>
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{worker.experience} Exp.</p>
+
+                                                <a
+                                                    href={`tel:${worker.number}`}
+                                                    className="w-full md:w-auto py-3 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all no-underline"
+                                                >
+                                                    <Phone size={18} />
+                                                    Call Now
+                                                </a>
                                             </div>
 
-                                            {/* Name, Category & Contact */}
-                                            <div className="flex-1">
-                                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                                                    <div>
-                                                        <h4 className="text-2xl font-black text-slate-900 mb-2 leading-tight">{worker.name}</h4>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-md shadow-blue-200">
-                                                                {worker.service}
-                                                            </span>
-                                                            <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                                                {worker.category}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-2 shrink-0">
-                                                        <a href={`tel:${worker.number}`} className="flex items-center gap-2.5 py-2.5 px-5 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg shadow-slate-200 group/btn">
-                                                            <Phone size={18} className="group-hover/btn:animate-bounce" />
-                                                            <span className="font-black tracking-tight text-sm">{worker.number}</span>
-                                                        </a>
-                                                        <div className="flex items-center gap-1 text-green-600 font-bold text-[10px] uppercase tracking-wide px-2 py-0.5 bg-green-50 rounded-lg">
-                                                            <ShieldCheck size={14} /> Verified Pro
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-4 py-3 border-t border-slate-50">
-                                                    <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs">
-                                                        <MapPin size={16} className="text-blue-500" /> {worker.location}
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-slate-500 font-bold text-xs">
-                                                        <Clock size={16} className="text-blue-500" /> Active Local
-                                                    </div>
-                                                </div>
-
-                                                {/* Reviews Section */}
-                                                <div className="mt-6 space-y-3">
-                                                    <h5 className="font-black text-slate-900 uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                        <MessageSquare size={14} className="text-blue-600" /> Customer Reviews ({worker.reviews?.length || 0})
+                                            {/* Reviews Section - Simplified */}
+                                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                                <div className="mb-4">
+                                                    <h5 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                                        <MessageSquare size={16} className="text-blue-500" />
+                                                        Recent Reviews
                                                     </h5>
-                                                    <div className="max-h-32 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-                                                        {worker.reviews?.map((review, idx) => (
-                                                            <div key={idx} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 relative group/rev">
-                                                                <div className="flex justify-between items-center mb-1">
-                                                                    <span className="font-black text-slate-900 text-[10px]">{review.user}</span>
-                                                                    <div className="flex gap-0.5">
-                                                                        {[...Array(5)].map((_, i) => (
-                                                                            <Star key={i} size={8} className={i < review.rating ? "text-amber-500 fill-current" : "text-slate-200"} />
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-slate-600 text-[11px] leading-relaxed font-medium">"{review.comment}"</p>
+                                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                        {worker.reviews && worker.reviews.length > 0 ? (
+                                                            <div className="text-sm text-slate-600">
+                                                                <span className="font-bold text-slate-900">{worker.reviews[0].user}: </span>
+                                                                "{worker.reviews[0].comment}"
                                                             </div>
-                                                        ))}
+                                                        ) : (
+                                                            <p className="text-sm text-slate-400 italic">No reviews yet.</p>
+                                                        )}
                                                     </div>
+                                                </div>
 
-                                                    {/* Quick Review Input */}
-                                                    <div className="mt-4 pt-4 border-t border-dashed border-slate-200">
-                                                        <div className="flex items-center gap-1.5 mb-2.5">
-                                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                                <button
-                                                                    key={star}
-                                                                    onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
-                                                                    className="transition-transform active:scale-90"
-                                                                >
-                                                                    <Star
-                                                                        size={16}
-                                                                        className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-500 fill-current" : "text-slate-200"}
-                                                                    />
-                                                                </button>
-                                                            ))}
-                                                            <span className="text-[9px] font-black text-slate-300 uppercase ml-1 tracking-widest leading-none">Tap to rate</span>
-                                                        </div>
-                                                        <div className="relative">
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Quick comment..."
-                                                                value={newReview.workerId === worker._id ? newReview.comment : ''}
-                                                                onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
-                                                                className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-4 focus:ring-blue-500/5 focus:bg-white outline-none font-bold placeholder:text-slate-300 transition-all"
-                                                            />
+                                                {/* Simple Review Input */}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Write a review..."
+                                                            value={newReview.workerId === worker._id ? newReview.comment : ''}
+                                                            onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
+                                                            className="w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleAddReview(worker._id)}
+                                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                                        >
+                                                            <Send size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-0.5 shrink-0">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
                                                             <button
-                                                                onClick={() => handleAddReview(worker._id)}
-                                                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+                                                                key={star}
+                                                                onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
+                                                                className="p-1 hover:bg-slate-100 rounded"
                                                             >
-                                                                <Send size={12} />
+                                                                <Star
+                                                                    size={16}
+                                                                    className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-400 fill-current" : "text-slate-300"}
+                                                                />
                                                             </button>
-                                                        </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        {/* Background Decoration */}
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full translate-x-16 -translate-y-16 group-hover:bg-blue-50 transition-colors" />
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="py-32 text-center bg-white rounded-[4rem] border border-dashed border-slate-200 flex flex-col items-center">
-                                <Search className="w-24 h-24 text-slate-100 mb-8" />
-                                <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight uppercase">Nothing Found</h3>
-                                <p className="text-slate-500 max-w-sm mx-auto font-medium mb-12">
-                                    We couldn't find any professionals matching your current filters. Try different keywords or reset your search.
-                                </p>
-                                <button
-                                    onClick={() => { setSelectedLocation(''); setSelectedCategory(''); setSelectedService(''); fetchWorkers(); setHasSearched(false); }}
-                                    className="px-12 py-5 bg-slate-100 text-slate-600 font-black rounded-[2rem] hover:bg-slate-200 transition-all uppercase tracking-widest text-sm shadow-xl shadow-slate-100"
-                                >
-                                    Reset All Search
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">No Professionals Found</h3>
+                            <p className="text-slate-500 mb-6">Try changing your location or category filters.</p>
+                            <button
+                                onClick={() => { setSelectedLocation(''); setSelectedCategory(''); setSelectedService(''); fetchWorkers(); setHasSearched(false); }}
+                                className="px-6 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors"
+                            >
+                                Clear Filters
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <ProcessingOverlay
                 isOpen={loading}
-                message="Scanning Local Directory..."
-                submessage="Finding the best professionals in your selected area"
+                message="Checking availability..."
             />
         </div>
     );

@@ -77,7 +77,7 @@ const BackgroundRemoval = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             <Navbar />
-            <div className="max-w-4xl mx-auto px-6 py-12">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12">
                 <header className="text-center mb-12">
                     <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-4 shadow-sm">
                         <Sparkles size={32} />
@@ -89,7 +89,7 @@ const BackgroundRemoval = () => {
                 </header>
 
                 <div className="bg-white rounded-[40px] shadow-2xl shadow-blue-900/5 border border-slate-100 overflow-hidden">
-                    <div className="p-8 md:p-12">
+                    <div className="p-5 md:p-12">
                         {!processedFilename ? (
                             <>
                                 <UploadBox
@@ -102,7 +102,7 @@ const BackgroundRemoval = () => {
 
                                 {file && (
                                     <div className="mt-10">
-                                        <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 mb-8">
+                                        <div className="bg-slate-50 rounded-3xl p-4 md:p-6 border border-slate-100 mb-8">
                                             <div className="flex items-center gap-2 mb-4 text-slate-900 font-bold">
                                                 <ImageIcon size={20} className="text-blue-600" />
                                                 Original Preview
@@ -141,7 +141,7 @@ const BackgroundRemoval = () => {
                                 <h2 className="text-3xl font-black text-slate-900 mb-4">Background Removed!</h2>
                                 <p className="text-slate-500 font-medium mb-10">Preview your transparent image below.</p>
 
-                                <div className="bg-[#f0f0f0] bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:20px_20px] rounded-3xl p-8 border border-slate-200 mb-10 inline-block w-full max-w-2xl">
+                                <div className="bg-[#f0f0f0] bg-[radial-gradient(#ccc_1px,transparent_1px)] [background-size:20px_20px] rounded-3xl p-4 md:p-8 border border-slate-200 mb-10 inline-block w-full max-w-2xl">
                                     <img
                                         src={`${import.meta.env.VITE_API_URL.replace('/api', '/temp')}/${processedFilename}`}
                                         alt="Processed"

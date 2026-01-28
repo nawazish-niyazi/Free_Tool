@@ -100,7 +100,7 @@ const PdfTools = () => {
         return (
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
-                <div className="max-w-7xl mx-auto px-6 py-12">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">PDF Tools</h1>
                         <p className="text-lg text-gray-600">All the tools you need to work with PDF files.</p>
@@ -229,12 +229,12 @@ const PdfTools = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="max-w-3xl mx-auto px-6 py-12">
+            <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 md:py-12">
                 <h1 className="text-3xl font-bold mb-8 text-gray-900">
                     {title}
                 </h1>
 
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-5 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                     {!processedFilename ? (
                         <>
                             {/* The box where users drop their files */}
@@ -335,7 +335,7 @@ const PdfTools = () => {
                         </>
                     ) : (
                         /* Show the Download section after processing is done */
-                        <div className="text-center py-10">
+                        <div className="text-center py-6 md:py-10">
                             <div className="inline-flex p-4 bg-green-100 text-green-600 rounded-full mb-4">
                                 <FileDown size={48} />
                             </div>

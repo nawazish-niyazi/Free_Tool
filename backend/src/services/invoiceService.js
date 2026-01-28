@@ -38,6 +38,7 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
         dueDate,
         notes,
         paymentMode,
+        templateId = 'classic' // Default template
     } = invoiceData;
 
     // We need at least one item to make an invoice
@@ -82,7 +83,22 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
     const formattedDueDate = dueDate ? format(new Date(dueDate), 'PPP') : format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 'PPP');
 
     // 4. Create the HTML: Mix the data with the design (template)
-    const templatePath = path.join(__dirname, '../templates/invoice.ejs');
+    let templateName = 'invoice.ejs';
+    const safeTemplateId = (templateId || 'classic').toLowerCase();
+
+    if (safeTemplateId === 'modern') templateName = 'invoice-modern.ejs';
+    if (safeTemplateId === 'minimal') templateName = 'invoice-minimal.ejs';
+
+    let templatePath = path.join(__dirname, `../templates/${templateName}`);
+
+    // Fallback if file doesn't exist
+    if (!fs.existsSync(templatePath)) {
+        console.warn(`Template ${templateName} not found. Falling back to classic.`);
+        templatePath = path.join(__dirname, '../templates/invoice.ejs');
+    }
+
+    console.log(`Using template: ${templatePath}`);
+
     const templateData = {
         id,
         business,
@@ -100,35 +116,61 @@ const generateInvoicePdf = async (invoiceData, outputDir) => {
     };
 
     // Render the file (combines design and data)
-    const html = await ejs.renderFile(templatePath, templateData);
+    let html;
+    try {
+        html = await ejs.renderFile(templatePath, templateData);
+    } catch (ejsError) {
+        console.error('EJS Rendering Error:', ejsError);
+        throw new Error('Failed to render invoice template: ' + ejsError.message);
+    }
 
     // 5. PDF Generation: Use a tool called Puppeteer (a headless browser) to "print" the HTML as a PDF
     const outputPath = path.join(outputDir, `invoice-${id}.pdf`);
 
     let browser;
     try {
-        // Start a hidden browser
+        console.log('Launching Puppeteer for invoice:', id);
+        // Start a hidden browser with robust flags
         browser = await puppeteer.launch({
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--font-render-hinting=none',
+            ]
         });
         const page = await browser.newPage();
 
-        // Feed our HTML into the browser
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        // 5. PDF Generation: Feed our HTML into the browser
+        console.log('Setting page content...');
+        try {
+            // 'networkidle2' is usually the most reliable for pages with assets
+            await page.setContent(html, {
+                waitUntil: ['load', 'networkidle2'],
+                timeout: 45000
+            });
+        } catch (contentError) {
+            console.warn('Puppeteer setContent timeout/error (continuing to PDF anyway):', contentError.message);
+        }
 
+        console.log('Printing to PDF...');
         // Save the page as an A4 size PDF
-        await page.pdf({
-            path: outputPath,
+        const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
             margin: {
-                top: '20px',
-                right: '20px',
-                bottom: '20px',
-                left: '20px'
+                top: '15mm',
+                right: '15mm',
+                bottom: '15mm',
+                left: '15mm'
             }
         });
+
+        fs.writeFileSync(outputPath, pdfBuffer);
+        console.log('Successfully saved PDF to:', outputPath);
 
         // Return the file info and the calculated data for saving to DB
         return {

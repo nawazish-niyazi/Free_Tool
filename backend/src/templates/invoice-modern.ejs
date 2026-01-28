@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', 'Helvetica Neue', Arial, sans-serif;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .header {
+            background-color: #2b6cb0;
+            /* Modern Blue */
+            color: white;
+            padding: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        .header .status {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .logo-img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .party-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 50px;
+            gap: 40px;
+        }
+
+        .party-col {
+            flex: 1;
+        }
+
+        .party-title {
+            color: #a0aec0;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 5px;
+        }
+
+        .party-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+            color: #1a202c;
+        }
+
+        .party-details {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 40px;
+        }
+
+        th {
+            background-color: #edf2f7;
+            color: #4a5568;
+            font-weight: 600;
+            text-align: left;
+            padding: 16px;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        th:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        th:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            text-align: right;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+        td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .items-table-header {
+            margin-top: 20px;
+        }
+
+        .summary-section {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .summary-box {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 12px;
+            width: 300px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #718096;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #cbd5e0;
+            font-size: 20px;
+            font-weight: 800;
+            color: #2b6cb0;
+        }
+
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #edf2f7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div>
+            <h1>Invoice</h1>
+            <div class="status">#<%= invoiceNumber %>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <% if (business.logo) { %>
+                <div class="logo-placeholder" style="margin-left: auto;">
+                    <img src="<%= business.logo %>" alt="Logo" class="logo-img">
+                </div>
+                <% } %>
+                    <div style="font-size: 18px; font-weight: 600;">
+                        <%= business.name %>
+                    </div>
+                    <div style="opacity: 0.9;">
+                        <%= issueDate %>
+                    </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="party-grid">
+            <div class="party-col">
+                <div class="party-title">Invoiced From</div>
+                <h3 class="party-name">
+                    <%= business.name %>
+                </h3>
+                <div class="party-details">
+                    <%= business.address %><br>
+                        <%= business.email %><br>
+                            <%= business.phone %>
+                </div>
+            </div>
+            <div class="party-col">
+                <div class="party-title">Invoiced To</div>
+                <h3 class="party-name">
+                    <%= client.name %>
+                </h3>
+                <div class="party-details">
+                    <%= client.address %><br>
+                        <%= client.email %><br>
+                            <%= client.phone %>
+                </div>
+            </div>
+            <div class="party-col" style="text-align: right;">
+                <div class="party-title" style="text-align: right;">Payment Info</div>
+                <div class="party-details">
+                    <strong>Due Date:</strong>
+                    <%= dueDate %><br>
+                        <strong>Currency:</strong>
+                        <%= currency %><br>
+                            <% if (paymentMode) { %>
+                                <strong>Mode:</strong>
+                                <%= paymentMode %>
+                                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th style="text-align: right;">Cost</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% items.forEach(item=> { %>
+                    <tr>
+                        <td>
+                            <span style="font-weight: 600; color: #2d3748;">
+                                <%= item.description %>
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <%= formatCurrency(item.unitPrice, currency) %>
+                        </td>
+                        <td style="text-align: center;">
+                            <%= item.quantity %>
+                        </td>
+                        <td>
+                            <%= formatCurrency(item.total, currency) %>
+                        </td>
+                    </tr>
+                    <% }) %>
+            </tbody>
+        </table>
+
+        <div class="summary-section">
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>
+                        <%= formatCurrency(totals.subtotal, currency) %>
+                    </span>
+                </div>
+                <% if (totals.tax> 0) { %>
+                    <div class="summary-row">
+                        <span>Tax (<%= totals.tax %>%)</span>
+                        <span>+ <%= formatCurrency(totals.taxAmount, currency) %></span>
+                    </div>
+                    <% } %>
+                        <% if (totals.discount> 0) { %>
+                            <div class="summary-row">
+                                <span>Discount (<%= totals.discount %>%)</span>
+                                <span>- <%= formatCurrency(totals.discountAmount, currency) %></span>
+                            </div>
+                            <% } %>
+                                <div class="summary-total">
+                                    <span>Total</span>
+                                    <span>
+                                        <%= formatCurrency(totals.grandTotal, currency) %>
+                                    </span>
+                                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Notes:</strong>
+                <%= notes || 'Thank you for your business!' %>
+            </p>
+            <p style="margin-top: 5px;">Generated by N.A.I.R Solutions</p>
+        </div>
+    </div>
+</body>
+
+</html>
