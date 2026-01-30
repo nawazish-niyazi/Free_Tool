@@ -6,6 +6,38 @@ const { upload, deleteFile } = require('../middleware/fileManager');
 const invoiceService = require('../services/invoiceService');
 const { protect } = require('../middleware/auth');
 const Invoice = require('../models/Invoice');
+const User = require('../models/User');
+
+// GET /api/invoice/business-profile
+router.get('/business-profile', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        res.json({ success: true, businessProfile: user.businessProfile || null });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// POST /api/invoice/business-profile
+router.post('/business-profile', protect, async (req, res) => {
+    try {
+        const { name, address, email, phone, logoData } = req.body;
+        const user = await User.findById(req.user.id);
+
+        user.businessProfile = {
+            name,
+            address,
+            email,
+            phone,
+            logoData
+        };
+
+        await user.save();
+        res.json({ success: true, message: 'Business profile saved successfully', businessProfile: user.businessProfile });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 // POST /api/invoice/generate
 router.post('/generate', protect, upload.single('logo'), async (req, res) => {

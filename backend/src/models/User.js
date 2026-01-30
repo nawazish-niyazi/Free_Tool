@@ -29,6 +29,16 @@ const UserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    businessProfile: {
+        name: String,
+        address: String,
+        email: String,
+        phone: String,
+        logoData: String // Store as base64
+    },
+    profilePicture: {
+        type: String // Base64
     }
 });
 
@@ -36,9 +46,11 @@ const UserSchema = new mongoose.Schema({
 UserSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         next();
+    } else {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Match user entered password to hashed password in database

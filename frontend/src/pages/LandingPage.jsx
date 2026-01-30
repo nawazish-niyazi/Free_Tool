@@ -40,7 +40,7 @@ const LandingPage = () => {
                     <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
                     <h1 className="text-2xl font-black text-gray-900 mb-2">Oops!</h1>
                     <p className="text-gray-500 font-medium">{error}</p>
-                    <a href="/" className="mt-6 inline-block text-blue-600 font-bold hover:underline">Back to Home</a>
+                    <a href="/" className="mt-6 inline-block text-blue-600 font-bold md:hover:underline">Back to Home</a>
                 </div>
             </div>
         );
@@ -72,10 +72,10 @@ const LandingPage = () => {
                             href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group block bg-white hover:bg-blue-600 p-5 rounded-3xl border border-gray-100 shadow-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-200 flex items-center justify-between"
+                            className="group block bg-white md:hover:bg-blue-600 p-5 rounded-3xl border border-gray-100 shadow-sm transition-all duration-300 transform md:hover:-translate-y-1 md:hover:shadow-xl md:hover:shadow-blue-200 flex items-center justify-between"
                         >
-                            <span className="font-black text-gray-900 group-hover:text-white transition-colors">{link.name}</span>
-                            <ExternalLink className="text-gray-400 group-hover:text-white transition-colors" size={20} />
+                            <span className="font-black text-gray-900 md:group-hover:text-white transition-colors">{link.name}</span>
+                            <ExternalLink className="text-gray-400 md:group-hover:text-white transition-colors" size={20} />
                         </a>
                     ))}
                 </div>

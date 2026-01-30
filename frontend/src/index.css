@@ -6,6 +6,62 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script&family=Great+Vibes&family=Sacramento&family=Parisienne&family=Allura&display=swap');
 
+/* Lobster Font Family */
+.lobster-regular {
+  font-family: "Lobster", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Montserrat Font Family */
+.montserrat {
+  font-family: "Montserrat", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+/* Montserrat Weight Variants */
+.montserrat-thin {
+  font-weight: 100;
+}
+
+.montserrat-extra-light {
+  font-weight: 200;
+}
+
+.montserrat-light {
+  font-weight: 300;
+}
+
+.montserrat-regular {
+  font-weight: 400;
+}
+
+.montserrat-medium {
+  font-weight: 500;
+}
+
+.montserrat-semibold {
+  font-weight: 600;
+}
+
+.montserrat-bold {
+  font-weight: 700;
+}
+
+.montserrat-extra-bold {
+  font-weight: 800;
+}
+
+.montserrat-black {
+  font-weight: 900;
+}
+
+/* Montserrat Italic Variants */
+.montserrat-italic {
+  font-style: italic;
+}
+
 html,
 body,
 #root {

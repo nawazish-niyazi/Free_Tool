@@ -11,7 +11,8 @@ const path = require('path');
 const fs = require('fs');
 
 // 1. Load configuration from the .env file
-dotenv.config();
+// 1. Load configuration from the .env file
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // 2. Connect to the database (MongoDB)
 connectDB();
@@ -82,6 +83,7 @@ app.use('/api/auth', authRoutes); // Logic for users and authentication
 app.use('/api/image', imageRoutes); // New: Logic for image processing
 app.use('/api/qr', qrRoutes); // New: Logic for QR code generation
 app.use('/api/local-help', localHelpRoutes); // New: Logic for local help line
+app.use('/api/rewards', require('./routes/rewardRoutes')); // New: Rewards & Referrals
 app.use('/api/admin', adminRoutes); // New: Secure Admin Panel logic
 
 /**

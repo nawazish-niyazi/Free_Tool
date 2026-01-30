@@ -4,6 +4,7 @@ const Professional = require('../models/Professional');
 const UsageLog = require('../models/UsageLog');
 const Invoice = require('../models/Invoice');
 const MultiLinkQR = require('../models/MultiLinkQR');
+const Referral = require('../models/Referral');
 const jwt = require('jsonwebtoken');
 
 // @desc    Admin Login
@@ -41,6 +42,13 @@ exports.getDashboardStats = async (req, res) => {
         const totalUsers = await User.countDocuments();
         const totalProfessionals = await Professional.countDocuments();
         const totalInvoices = await Invoice.countDocuments();
+        const pendingWorkers = await Professional.countDocuments({ status: 'pending' });
+        const pendingReferrals = await Referral.countDocuments({ status: 'pending' });
+
+        // Users created in the last 24 hours
+        const last24h = new Date();
+        last24h.setHours(last24h.getHours() - 24);
+        const newUsers = await User.countDocuments({ createdAt: { $gte: last24h } });
 
         // Tool usage summary (Last 30 days)
         const dateLimit30 = new Date();
@@ -67,7 +75,14 @@ exports.getDashboardStats = async (req, res) => {
 
         res.json({
             success: true,
-            stats: { totalUsers, totalProfessionals, totalInvoices },
+            stats: {
+                totalUsers,
+                totalProfessionals,
+                totalInvoices,
+                pendingWorkers,
+                pendingReferrals,
+                newUsers
+            },
             toolUsage: logs30d,
             usageLast3Days: logs3d,
             recentActivity: recentLogs

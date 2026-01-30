@@ -60,6 +60,19 @@ router.post('/remove-bg', upload.single('file'), async (req, res) => {
 });
 
 /**
+ * API: General Image Upload
+ */
+router.post('/upload', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    res.json({
+        success: true,
+        filename: req.file.filename
+    });
+});
+
+/**
  * API: Download Processed Image (Protected)
  */
 router.get('/download/:filename', protect, (req, res) => {

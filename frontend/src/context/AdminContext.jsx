@@ -21,13 +21,9 @@ export const AdminProvider = ({ children }) => {
 
     const verifyAdmin = async () => {
         try {
-            // Since we don't have a 'me' for admin yet, we just check if token is valid via a ping
-            const res = await api.get('/admin/dashboard', {
-                headers: { Authorization: `Bearer ${adminToken}` }
-            });
+            // Interceptor now handles the token if it's in localStorage
+            const res = await api.get('/admin/dashboard');
             if (res.data.success) {
-                // If it succeeds, the token is valid. 
-                // We should ideally have a /me endpoint, but for now we store what we have in localStorage
                 const storedAdmin = JSON.parse(localStorage.getItem('adminUser'));
                 setAdmin(storedAdmin);
             } else {

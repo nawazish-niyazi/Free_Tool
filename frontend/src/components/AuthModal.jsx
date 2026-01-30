@@ -56,38 +56,38 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col relative max-h-[90vh] overflow-y-auto"
+                        className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl flex flex-col relative"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header Decoration */}
-                        <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
+                        <div className="h-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-[32px]" />
 
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
+                            className="absolute top-4 right-4 p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-full transition-all"
                         >
-                            <X size={20} />
+                            <X size={18} />
                         </button>
 
-                        <div className="p-10">
-                            <div className="text-center mb-10">
-                                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600 shadow-inner">
-                                    <ShieldCheck size={32} />
+                        <div className="p-6">
+                            <div className="text-center mb-6">
+                                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-inner">
+                                    <ShieldCheck size={26} />
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-900 mb-2">
+                                <h2 className="text-2xl font-black text-slate-900 mb-2">
                                     {isLogin ? 'Welcome Back' : 'Join N.A.I.R'}
                                 </h2>
-                                <p className="text-slate-500 font-medium px-4">
+                                <p className="text-slate-500 font-medium text-sm px-2">
                                     {isLogin
                                         ? 'Log in to securely download your files and keep track of your history.'
                                         : 'Create your free account to access unlimited downloads and history.'}
                                 </p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-3">
                                 {!isLogin && (
                                     <div className="relative group">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                         <input
                                             type="text"
                                             name="name"
@@ -95,13 +95,13 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                             required
                                             value={formData.name}
                                             onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500/20 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all font-bold placeholder:font-medium text-slate-900"
+                                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500/20 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all font-semibold placeholder:font-medium text-slate-900 text-sm"
                                         />
                                     </div>
                                 )}
 
                                 <div className="relative group">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                     <input
                                         type="tel"
                                         name="phone"
@@ -115,7 +115,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
 
                                 {!isLogin && (
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                         <input
                                             type="email"
                                             name="email"
@@ -128,7 +128,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                 )}
 
                                 <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                     <input
                                         type="password"
                                         name="password"
@@ -141,7 +141,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                 </div>
 
                                 {error && (
-                                    <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold flex items-center gap-2">
+                                    <div className="p-3 bg-red-50 text-red-600 rounded-2xl text-xs font-bold flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" />
                                         {error}
                                     </div>
@@ -150,34 +150,48 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-black text-lg shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:hover:translate-y-0"
+                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:hover:translate-y-0"
                                 >
                                     {loading ? (
                                         <Loader2 className="animate-spin" size={24} />
                                     ) : (
                                         <>
                                             {isLogin ? 'Sign In' : 'Create Account'}
-                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}
                                 </button>
                             </form>
 
-                            <div className="mt-8 text-center">
-                                <p className="text-slate-500 font-bold text-sm">
+                            <div className="mt-5 text-center">
+                                <p className="text-slate-500 font-semibold text-xs">
                                     {isLogin ? "Don't have an account?" : "Already have an account?"}
                                 </p>
                                 <button
                                     onClick={() => { setIsLogin(!isLogin); setError(null); }}
-                                    className="mt-2 text-blue-600 font-black hover:underline underline-offset-4"
+                                    className="mt-1.5 text-blue-600 font-bold text-sm md:hover:underline underline-offset-4"
                                 >
                                     {isLogin ? 'Create one for free' : 'Sign in to your account'}
                                 </button>
+
+                                {isLogin && (
+                                    <div className="mt-5 pt-4 border-t border-slate-100">
+                                        <p className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider mb-1.5">Want to earn with us?</p>
+                                        <a
+                                            href="/worker-signup"
+                                            onClick={onClose}
+                                            className="text-indigo-600 font-bold text-sm hover:text-indigo-700 md:hover:underline underline-offset-4 flex items-center justify-center gap-1"
+                                        >
+                                            Create professional account
+                                            <ArrowRight size={13} />
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-center rounded-b-[32px]">
+                            <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">
                                 Secure Login Protected by NAIR Solutions
                             </p>
                         </div>

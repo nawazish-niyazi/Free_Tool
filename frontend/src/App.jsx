@@ -14,6 +14,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import LandingPage from './pages/LandingPage';
 import WorkerSignup from './pages/WorkerSignup';
+import RewardsReferralPage from './pages/RewardsReferralPage';
 
 // Placeholders for now
 // const PdfTools = () => <div className="p-10">PDF Tools Page (Coming Soon)</div>;
@@ -77,6 +78,7 @@ function AppContent() {
         <Route path="/qr-generator" element={<QrGenerator />} />
         <Route path="/q/:shortId" element={<LandingPage />} />
         <Route path="/worker-signup" element={<WorkerSignup />} />
+        <Route path="/rewards-referral" element={<RewardsReferralPage />} />
 
         {/* Admin Routes */}
         <Route path="/management/login" element={<AdminLogin />} />

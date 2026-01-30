@@ -12,7 +12,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 // Configure PDF worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-import { API_URL } from '../api/axios';
+import api, { API_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
@@ -84,47 +84,86 @@ const InvoiceGenerator = () => {
         const businessKey = `invoice_business_info_${userSuffix}`;
         const skipKey = `invoice_setup_skipped_${userSuffix}`;
 
-        const savedData = localStorage.getItem(businessKey);
-        const setupSkipped = localStorage.getItem(skipKey);
+        const loadBusinessData = async () => {
+            const isProfileComplete = (p) => p && p.name && p.name.trim() !== '';
 
-        if (savedData) {
-            const parsedData = JSON.parse(savedData);
+            // Try backend first if logged in
+            if (isLoggedIn) {
+                try {
+                    const res = await api.get('/invoice/business-profile');
+                    if (res.data.success && res.data.businessProfile) {
+                        const profile = res.data.businessProfile;
+
+                        if (isProfileComplete(profile)) {
+                            const dataToSet = {
+                                name: profile.name || '',
+                                address: profile.address || '',
+                                email: profile.email || '',
+                                phone: profile.phone || '',
+                                logo: profile.logoData || null
+                            };
+
+                            // Sync to state
+                            setInvoice(prev => ({
+                                ...prev,
+                                business: dataToSet
+                            }));
+
+                            if (profile.logoData) {
+                                setLogoPreview(profile.logoData);
+                                const logoFile = dataURLtoFile(profile.logoData, 'business-logo.png');
+                                if (logoFile) setLogo(logoFile);
+                            }
+
+                            setBusinessSaved(true);
+                            setShowBusinessModal(false);
+
+                            // Sync to local storage for speed on next load
+                            localStorage.setItem(businessKey, JSON.stringify(dataToSet));
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to sync business profile from backend:', err);
+                }
+            }
+
+            // Fallback to local storage if backend failed or not logged in
+            const savedData = localStorage.getItem(businessKey);
+            const setupSkipped = localStorage.getItem(skipKey);
+
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                if (isProfileComplete(parsedData)) {
+                    setInvoice(prev => ({
+                        ...prev,
+                        business: {
+                            name: parsedData.name || '',
+                            address: parsedData.address || '',
+                            email: parsedData.email || '',
+                            phone: parsedData.phone || '',
+                            logo: parsedData.logo || null
+                        }
+                    }));
+                    if (parsedData.logo) {
+                        setLogoPreview(parsedData.logo);
+                        const logoFile = dataURLtoFile(parsedData.logo, 'business-logo.png');
+                        if (logoFile) setLogo(logoFile);
+                    }
+                    setBusinessSaved(true);
+                    setShowBusinessModal(false);
+                    return;
+                }
+            }
+
+            // If we're here, no valid profile was found
             setInvoice(prev => ({
                 ...prev,
-                business: {
-                    name: parsedData.name || '',
-                    address: parsedData.address || '',
-                    email: parsedData.email || '',
-                    phone: parsedData.phone || '',
-                    logo: parsedData.logo || null
-                }
-            }));
-            if (parsedData.logo) {
-                setLogoPreview(parsedData.logo);
-                const logoFile = dataURLtoFile(parsedData.logo, 'business-logo.png');
-                if (logoFile) setLogo(logoFile);
-            } else {
-                setLogoPreview(null);
-                setLogo(null);
-            }
-            setBusinessSaved(true);
-            setShowBusinessModal(false);
-        } else {
-            // ALWAYS clear on logout or if no data found
-            setInvoice({
                 invoiceNumber: `INV-${Math.floor(100000 + Math.random() * 900000)}`,
-                issueDate: new Date().toISOString().split('T')[0],
-                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                currency: 'INR',
-                notes: '',
-                tax: '',
-                discount: '',
-                paymentMode: '',
                 business: { name: '', address: '', email: '', phone: '' },
                 client: { name: '', address: '', email: '', phone: '' },
-                items: [],
-                templateId: 'classic'
-            });
+                items: []
+            }));
             setLogoPreview(null);
             setLogo(null);
             setBusinessSaved(false);
@@ -132,7 +171,9 @@ const InvoiceGenerator = () => {
             if (isLoggedIn && !setupSkipped) {
                 setShowBusinessModal(true);
             }
-        }
+        };
+
+        loadBusinessData();
     }, [isLoggedIn, user?.id, authLoading]);
 
 
@@ -140,10 +181,29 @@ const InvoiceGenerator = () => {
         calculateTotals();
     }, [invoice.items, invoice.tax, invoice.discount]);
 
-    const saveBusinessPermanently = (data) => {
+    const saveBusinessPermanently = async (data) => {
         const userSuffix = isLoggedIn && user?.id ? user.id : 'guest';
         const businessKey = `invoice_business_info_${userSuffix}`;
+
+        // Save to Local Storage for immediate speed
         localStorage.setItem(businessKey, JSON.stringify(data));
+
+        // Save to Backend if logged in for multi-device sync
+        if (isLoggedIn) {
+            try {
+                await api.post('/invoice/business-profile', {
+                    name: data.name,
+                    address: data.address,
+                    email: data.email,
+                    phone: data.phone,
+                    logoData: data.logo
+                });
+            } catch (err) {
+                console.error('Failed to sync business profile to backend:', err);
+                // We still proceed since it's saved locally
+            }
+        }
+
         setInvoice(prev => ({
             ...prev,
             business: {
@@ -158,6 +218,9 @@ const InvoiceGenerator = () => {
             setLogoPreview(data.logo);
             const logoFile = dataURLtoFile(data.logo, 'business-logo.png');
             if (logoFile) setLogo(logoFile);
+        } else {
+            setLogoPreview(null);
+            setLogo(null);
         }
         setBusinessSaved(true);
         setShowBusinessModal(false);
@@ -170,8 +233,8 @@ const InvoiceGenerator = () => {
         setShowBusinessModal(false);
     };
 
-    const handleResetBusiness = () => {
-        if (!window.confirm("Are you sure? This will permanently delete your saved business name, address, and logo from this device.")) return;
+    const handleResetBusiness = async () => {
+        if (!window.confirm("Are you sure? This will permanently delete your saved business name, address, and logo from all your devices.")) return;
 
         const userSuffix = isLoggedIn && user?.id ? user.id : 'guest';
         const businessKey = `invoice_business_info_${userSuffix}`;
@@ -179,6 +242,21 @@ const InvoiceGenerator = () => {
 
         localStorage.removeItem(businessKey);
         localStorage.removeItem(skipKey);
+
+        // Clear from backend if logged in
+        if (isLoggedIn) {
+            try {
+                await api.post('/invoice/business-profile', {
+                    name: '',
+                    address: '',
+                    email: '',
+                    phone: '',
+                    logoData: null
+                });
+            } catch (err) {
+                console.error('Failed to reset business profile on backend:', err);
+            }
+        }
 
         // Reset state
         setInvoice(prev => ({
@@ -209,20 +287,33 @@ const InvoiceGenerator = () => {
     };
 
     const handleInputChange = (section, field, value) => {
-        if (section) {
-            setInvoice(prev => ({
+        setInvoice(prev => {
+            const newState = section ? {
                 ...prev,
                 [section]: {
                     ...prev[section],
                     [field]: value
                 }
-            }));
-        } else {
-            setInvoice(prev => ({
+            } : {
                 ...prev,
                 [field]: value
-            }));
-        }
+            };
+
+            // If it's a business field and user is logged in, we should save it
+            // We use a small timeout to avoid too many requests
+            if (section === 'business' && isLoggedIn) {
+                if (window.businessSyncTimeout) clearTimeout(window.businessSyncTimeout);
+                window.businessSyncTimeout = setTimeout(() => {
+                    const businessData = {
+                        ...newState.business,
+                        logo: logoPreview // use the latest logo preview
+                    };
+                    saveBusinessPermanently(businessData);
+                }, 1000);
+            }
+
+            return newState;
+        });
     };
 
     const handleItemChange = (id, field, value) => {
@@ -283,6 +374,13 @@ const InvoiceGenerator = () => {
         const file = dataURLtoFile(croppedDataUrl, 'business-logo.png');
         setLogo(file);
         setShowCropModal(false);
+
+        // Sync to backend/storage if we have business info
+        const updatedBusiness = {
+            ...invoice.business,
+            logo: croppedDataUrl
+        };
+        saveBusinessPermanently(updatedBusiness);
     };
 
 

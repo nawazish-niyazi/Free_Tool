@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { Zap, LogOut, User as UserIcon, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import UserProfileModal from './UserProfileModal';
 
 const Navbar = () => {
     const { isLoggedIn, user, logout, setShowAuthModal } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -32,6 +34,7 @@ const Navbar = () => {
                             <Link to="/image-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Image Tools</Link>
                             <Link to="/qr-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">QR Generator</Link>
                             <Link to="/invoice-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Invoice Generator</Link>
+                            <Link to="/rewards-referral" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">R&R</Link>
                             {isLoggedIn && (
                                 <Link to="/local-help" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Local Help</Link>
                             )}
@@ -40,10 +43,21 @@ const Navbar = () => {
 
                             {isLoggedIn ? (
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 max-w-[150px]">
-                                        <UserIcon size={16} className="shrink-0" />
+                                    <button
+                                        onClick={() => setShowProfileModal(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100 max-w-[150px] hover:bg-blue-100 transition-colors"
+                                    >
+                                        {user?.profilePicture ? (
+                                            <img
+                                                src={user.profilePicture}
+                                                alt="Profile"
+                                                className="w-6 h-6 rounded-full object-cover border border-blue-200 shrink-0"
+                                            />
+                                        ) : (
+                                            <UserIcon size={16} className="shrink-0" />
+                                        )}
                                         <span className="font-bold text-xs lg:text-sm truncate">{user?.name}</span>
-                                    </div>
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setShowLogoutConfirm(true);
@@ -67,10 +81,21 @@ const Navbar = () => {
                         {/* Mobile Menu Button */}
                         <div className="md:hidden flex items-center gap-4">
                             {isLoggedIn && (
-                                <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 max-w-[100px]">
-                                    <UserIcon size={14} className="shrink-0" />
+                                <button
+                                    onClick={() => setShowProfileModal(true)}
+                                    className="flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 max-w-[100px]"
+                                >
+                                    {user?.profilePicture ? (
+                                        <img
+                                            src={user.profilePicture}
+                                            alt="Profile"
+                                            className="w-5 h-5 rounded-full object-cover border border-blue-200 shrink-0"
+                                        />
+                                    ) : (
+                                        <UserIcon size={14} className="shrink-0" />
+                                    )}
                                     <span className="font-bold text-[10px] truncate">{user?.name?.split(' ')[0]}</span>
-                                </div>
+                                </button>
                             )}
                             <button
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -103,6 +128,7 @@ const Navbar = () => {
                                 <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Image Tools</Link>
                                 <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">QR Generator</Link>
                                 <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Invoice Generator</Link>
+                                <Link to="/rewards-referral" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">R&R</Link>
                                 {isLoggedIn && (
                                     <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Local Help</Link>
                                 )}
@@ -187,6 +213,8 @@ const Navbar = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
         </>
     );
 };

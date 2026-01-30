@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
-import { UserPlus, MapPin, Briefcase, Phone, User, Award, CheckCircle, AlertCircle } from 'lucide-react';
+
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { UserPlus, MapPin, Briefcase, Phone, User, Award, CheckCircle, AlertCircle, MessageSquare, Mail, Lock } from 'lucide-react';
 import api from '../api/axios';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
 const WorkerSignup = () => {
+    const { isLoggedIn, user, secureLogin } = useAuth();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
         number: '',
         location: '',
         category: '',
         service: '',
-        experience: ''
+        experience: '',
+        description: '',
+        minPrice: '',
+        maxPrice: '',
+        email: '',
+        password: ''
     });
 
     const [loading, setLoading] = useState(false);
@@ -104,8 +114,28 @@ const WorkerSignup = () => {
 
         // Validation
         if (!formData.name || !formData.number || !formData.location ||
-            !formData.category || !formData.service || !formData.experience) {
+            !formData.category || !formData.service || !formData.experience ||
+            !formData.minPrice) {
             setError('All fields are required');
+            setLoading(false);
+            return;
+        }
+
+        // Price validation
+        if (parseInt(formData.minPrice) < 0) {
+            setError('Minimum price cannot be negative');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.maxPrice && parseInt(formData.maxPrice) < 0) {
+            setError('Maximum price cannot be negative');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.maxPrice && parseInt(formData.minPrice) > parseInt(formData.maxPrice)) {
+            setError('Minimum price cannot be greater than maximum price');
             setLoading(false);
             return;
         }
@@ -118,22 +148,33 @@ const WorkerSignup = () => {
             return;
         }
 
+        if (!isLoggedIn && !formData.password) {
+            setError('Password is required for account creation');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await api.post('/local-help/worker-signup', formData);
+            const dataToSubmit = {
+                ...formData,
+                maxPrice: formData.maxPrice ? formData.maxPrice : 0,
+                userId: isLoggedIn ? user.id : undefined
+            };
+
+            const response = await api.post('/local-help/worker-signup', dataToSubmit);
 
             if (response.data.success) {
-                setSuccess(true);
-                setFormData({
-                    name: '',
-                    number: '',
-                    location: '',
-                    category: '',
-                    service: '',
-                    experience: ''
-                });
+                // If token returned (new account creation), log them in
+                if (response.data.token && response.data.user) {
+                    secureLogin(response.data.token, response.data.user, response.data.data);
+                }
+
+                // Redirect to landing page immediately
+                navigate('/');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+            console.error('Signup Error:', err);
+            setError(err.response?.data?.message || err.message || 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -149,7 +190,7 @@ const WorkerSignup = () => {
                             <UserPlus className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Worker Registration</h1>
+                            <h1 className="text-3xl font-bold text-gray-900">Professional Registration</h1>
                             <p className="text-gray-600 mt-1">Join our professional network</p>
                         </div>
                     </div>
@@ -176,19 +217,7 @@ const WorkerSignup = () => {
                     </div>
                 ) : (
                     <div className="bg-white rounded-3xl shadow-xl p-4 md:p-8">
-                        {/* Info Banner */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-6 mb-8">
-                            <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5" />
-                                Important Information
-                            </h3>
-                            <ul className="text-sm text-blue-800 space-y-1 ml-7">
-                                <li>• No account creation or password required</li>
-                                <li>• Free registration - no charges</li>
-                                <li>• Your profile will be visible in the directory immediately</li>
-                                <li>• You can be contacted by users directly</li>
-                            </ul>
-                        </div>
+                        {/* Info Banner Removed */}
 
                         {/* Error Message */}
                         {error && (
@@ -233,6 +262,44 @@ const WorkerSignup = () => {
                                     required
                                 />
                             </div>
+
+                            {!isLoggedIn && (
+                                <>
+                                    {/* Email (Optional) */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <Mail className="w-4 h-4 inline mr-2" />
+                                            Email (Optional)
+                                        </label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            placeholder="you@example.com"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    {/* Password */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            <Lock className="w-4 h-4 inline mr-2" />
+                                            Set Password *
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Create a secure password"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                            required
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1 ml-1">You will use this to log in to your account.</p>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Location */}
                             <div>
@@ -314,6 +381,68 @@ const WorkerSignup = () => {
                                 />
                             </div>
 
+                            {/* Price Range */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Minimum Price */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        <span className="inline-flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Minimum Price (₹) *
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="minPrice"
+                                        value={formData.minPrice}
+                                        onChange={handleChange}
+                                        placeholder="e.g., 500"
+                                        min="0"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Maximum Price */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        <span className="inline-flex items-center gap-2">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Maximum Price (₹) <span className="text-gray-400 font-normal">(Optional)</span>
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="maxPrice"
+                                        value={formData.maxPrice}
+                                        onChange={handleChange}
+                                        placeholder="Depends upon work"
+                                        min="0"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    <MessageSquare className="w-4 h-4 inline mr-2" />
+                                    Describe your work
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    placeholder="Tell users about your services, skills, or any other details..."
+                                    rows="4"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                                ></textarea>
+                            </div>
+
                             {/* Submit Button */}
                             <button
                                 type="submit"
@@ -326,7 +455,7 @@ const WorkerSignup = () => {
                                         Submitting...
                                     </span>
                                 ) : (
-                                    'Submit Application'
+                                    'Create Account'
                                 )}
                             </button>
                         </form>
@@ -335,7 +464,7 @@ const WorkerSignup = () => {
             </div>
             <ProcessingOverlay
                 isOpen={loading}
-                message="Submitting Application..."
+                message="Creating Account..."
                 submessage="Registering your profile in our local directory"
             />
         </div>

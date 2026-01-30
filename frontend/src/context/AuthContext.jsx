@@ -5,6 +5,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [professional, setProfessional] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
     const [showAuthModal, setShowAuthModal] = useState(false);
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
             const res = await api.get('/auth/me');
             if (res.data.success) {
                 setUser(res.data.user);
+                setProfessional(res.data.professional);
             } else {
                 logout();
             }
@@ -38,6 +40,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', res.data.token);
                 setToken(res.data.token);
                 setUser(res.data.user);
+                setProfessional(res.data.professional);
                 return { success: true };
             }
         } catch (err) {
@@ -46,6 +49,13 @@ export const AuthProvider = ({ children }) => {
                 message: err.response?.data?.message || 'Login failed'
             };
         }
+    };
+
+    const secureLogin = (newToken, newUser, newProfessional) => {
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
+        setUser(newUser);
+        setProfessional(newProfessional);
     };
 
     const register = async (name, phone, password, email) => {
@@ -72,13 +82,15 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('token');
         setToken(null);
         setUser(null);
+        setProfessional(null);
         api.defaults.headers.common['Authorization'] = '';
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout, isLoggedIn: !!user, showAuthModal, setShowAuthModal }}>
+        <AuthContext.Provider value={{ user, professional, token, loading, login, register, logout, isLoggedIn: !!user, showAuthModal, setShowAuthModal, secureLogin }}>
             {children}
         </AuthContext.Provider>
     );

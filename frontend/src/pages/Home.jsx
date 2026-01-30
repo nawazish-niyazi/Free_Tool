@@ -4,15 +4,27 @@
  * It shows a list of all the different tools available.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ToolCard from '../components/ToolCard';
 import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets, Eraser, Building2, Sparkles, Search, QrCode } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Home = () => {
     const { user } = useAuth();
+
+    // Rotating Placeholder Logic
+    const categories = ['Electrician', 'Plumber', 'Painter', 'Carpenter', 'Singer', 'Mechanic', 'Developer', 'Designer', 'Consultant'];
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndex((prevIndex) => (prevIndex + 1) % categories.length);
+        }, 1500); // 1.5 seconds for a smooth rotation
+        return () => clearInterval(interval);
+    }, []);
     /**
      * List of all tools shown on the home page.
      * Each tool has a title, description, icon, and link.
@@ -70,27 +82,55 @@ const Home = () => {
                         Your all-in-one destination for documents, images, and tools. One place to find everything you need to get the job done.
                     </p>
 
-                    {/* Local Help Line: Centered integration for logged-in users */}
+                    {/* Local Help Line: Premium Mobile-First Search Bar */}
                     {user && (
-                        <div className="flex justify-center items-center px-4">
-                            <Link
-                                to="/local-help"
-                                className="group relative flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 md:p-6 bg-white rounded-[2rem] sm:rounded-[2.5rem] border-2 border-dashed border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-xl w-full sm:w-auto"
-                            >
-                                <div className="p-3 sm:p-4 bg-blue-100 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <Search size={24} />
-                                </div>
-                                <div className="text-center sm:text-left">
-                                    <span className="block text-lg sm:text-xl font-bold text-gray-900">Local Help Line</span>
-                                    <p className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
-                                        Find professionals near you.
-                                    </p>
-                                </div>
-                                <div className="hidden sm:flex ml-4 p-2 bg-blue-600 text-white rounded-full group-hover:translate-x-1 transition-transform">
-                                    <Zap size={14} />
-                                </div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                            viewport={{ once: true, amount: 0.2 }}
+                            transition={{ duration: 0.5 }}
+                            className="flex flex-col items-center px-4 max-w-2xl mx-auto w-full"
+                        >
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="h-[2px] w-8 md:w-12 bg-blue-600/20 rounded-full"></div>
+                                <h2 className="text-sm md:text-xl font-black text-slate-900 tracking-[0.2em] uppercase">Local Help Line</h2>
+                                <div className="h-[2px] w-8 md:w-12 bg-blue-600/20 rounded-full"></div>
+                            </div>
+
+                            <Link to="/local-help" className="w-full">
+                                <motion.div
+                                    className="group w-full flex items-center gap-3 p-2 md:p-2.5 bg-white rounded-full border-2 border-slate-200 md:hover:border-blue-500 transition-all duration-300 shadow-xl shadow-slate-100 md:hover:shadow-blue-100 cursor-pointer transform md:hover:-translate-y-1"
+                                >
+                                    <div className="flex-1 flex items-center gap-3 pl-2 md:pl-4">
+                                        <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full group-hover:bg-white group-hover:shadow-md transition-all">
+                                            <Search size={20} className="md:w-6 md:h-6" />
+                                        </div>
+                                        <div className="flex items-center gap-1.5 overflow-hidden h-6 md:h-8">
+                                            <span className="text-sm md:text-lg text-slate-400 font-semibold whitespace-nowrap">
+                                                Search for
+                                            </span>
+                                            <div className="relative h-full flex items-center">
+                                                <AnimatePresence mode="wait">
+                                                    <motion.span
+                                                        key={categories[index]}
+                                                        initial={{ y: 20, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        exit={{ y: -20, opacity: 0 }}
+                                                        transition={{ duration: 0.3, ease: "easeOut" }}
+                                                        className="text-sm md:text-lg text-blue-600 font-bold whitespace-nowrap"
+                                                    >
+                                                        {categories[index]}...
+                                                    </motion.span>
+                                                </AnimatePresence>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg shadow-blue-200 group-hover:rotate-[360deg] transition-all duration-700 flex-shrink-0">
+                                        <Zap size={18} fill="white" className="drop-shadow-sm" />
+                                    </div>
+                                </motion.div>
                             </Link>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
             </div>

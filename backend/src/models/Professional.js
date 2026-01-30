@@ -5,6 +5,10 @@ const ReviewSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    userRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     rating: {
         type: Number,
         required: true,
@@ -50,6 +54,14 @@ const ProfessionalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    description: {
+        type: String,
+        default: ''
+    },
+    userRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     verified: {
         type: Boolean,
         default: true
@@ -58,6 +70,16 @@ const ProfessionalSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'approved', 'rejected'],
         default: 'approved'
+    },
+    priceRange: {
+        minPrice: {
+            type: Number,
+            default: 0
+        },
+        maxPrice: {
+            type: Number,
+            default: 0
+        }
     },
     reviews: [ReviewSchema]
 }, {

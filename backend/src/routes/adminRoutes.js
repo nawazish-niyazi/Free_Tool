@@ -18,6 +18,50 @@ const {
     updateWorkerStatus
 } = require('../controllers/adminController');
 const { adminProtect, authorize } = require('../middleware/adminAuth');
+const Coupon = require('../models/Coupon');
+const Referral = require('../models/Referral');
+
+// Rewards Management (Admin)
+router.get('/rewards/coupons', adminProtect, async (req, res) => {
+    try {
+        const coupons = await Coupon.find().sort({ createdAt: -1 });
+        res.json({ success: true, data: coupons });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/rewards/coupons', adminProtect, async (req, res) => {
+    try {
+        const { title, description, image, code, keyPoints } = req.body;
+        const newCoupon = await Coupon.create({
+            title, description, image, code, keyPoints,
+            createdBy: req.admin._id
+        });
+        res.status(201).json({ success: true, data: newCoupon });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.delete('/rewards/coupons/:id', adminProtect, async (req, res) => {
+    try {
+        await Coupon.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.get('/rewards/referrals', adminProtect, async (req, res) => {
+    try {
+        const referrals = await Referral.find().populate('referrer', 'name email phone').sort({ createdAt: -1 });
+        res.json({ success: true, data: referrals });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
 
 // Public Admin routes
 router.post('/login', login);

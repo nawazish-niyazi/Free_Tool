@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Professional = require('../models/Professional');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -78,6 +79,9 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        // Fetch professional profile if exists
+        const professional = await Professional.findOne({ userRef: user._id });
+
         res.json({
             success: true,
             token: generateToken(user._id),
@@ -85,8 +89,13 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 name: user.name,
                 phone: user.phone,
-                email: user.email
-            }
+                email: user.email,
+                profilePicture: user.profilePicture
+            },
+            professional: professional ? {
+                ...professional.toObject(),
+                reviews: undefined
+            } : null
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -101,6 +110,17 @@ router.post('/login', async (req, res) => {
 router.get('/me', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
+        let professional = await Professional.findOne({ userRef: req.user._id });
+
+        // Self-healing: If not found by ID, check by phone number and link if found
+        if (!professional && user.phone) {
+            professional = await Professional.findOne({ number: user.phone });
+            if (professional) {
+                professional.userRef = user._id;
+                await professional.save();
+                console.log(`Auto-linked professional profile ${professional._id} to user ${user._id}`);
+            }
+        }
 
         res.json({
             success: true,
@@ -108,9 +128,80 @@ router.get('/me', protect, async (req, res) => {
                 id: user._id,
                 name: user.name,
                 phone: user.phone,
-                email: user.email
-            }
+                email: user.email,
+                profilePicture: user.profilePicture
+            },
+            professional: professional ? {
+                ...professional.toObject(),
+                reviews: undefined // Don't send reviews to the user here
+            } : null
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+router.put('/profile', protect, async (req, res) => {
+    try {
+        const { name, email, phone, profilePicture } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (user) {
+            user.name = name || user.name;
+            user.email = email || user.email;
+            user.phone = phone || user.phone;
+            if (profilePicture !== undefined) user.profilePicture = profilePicture;
+
+            const updatedUser = await user.save();
+
+            // Check if professional exists and update common fields
+            const professional = await Professional.findOne({ userRef: user._id });
+            if (professional) {
+                if (name) professional.name = name;
+                if (phone) professional.number = phone;
+                await professional.save();
+            }
+
+            res.json({
+                success: true,
+                user: {
+                    id: updatedUser._id,
+                    name: updatedUser.name,
+                    phone: updatedUser.phone,
+                    email: updatedUser.email,
+                    profilePicture: updatedUser.profilePicture
+                }
+            });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * @desc    Reset password
+ * @route   PUT /api/auth/reset-password
+ * @access  Private
+ */
+router.put('/reset-password', protect, async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (user && (await user.matchPassword(oldPassword))) {
+            user.password = newPassword;
+            await user.save();
+            res.json({ success: true, message: 'Password updated successfully' });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid current password' });
+        }
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
