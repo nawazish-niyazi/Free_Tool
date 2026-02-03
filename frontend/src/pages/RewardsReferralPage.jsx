@@ -196,7 +196,7 @@ const RewardsReferralPage = () => {
                         Exclusive Rewards for Our Community
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-                        Rewards & <span className="text-blue-200">Referrals</span>
+                        Deals <span className="text-blue-200">Referrals</span>
                     </h1>
                     <p className="text-blue-50 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
                         Earn rewards and discover exclusive deals from our premium partners. This page is dedicated to helping you save and earn.
@@ -459,29 +459,6 @@ const RewardsReferralPage = () => {
                 </div>
             </div>
 
-            {/* CTA Section */}
-            <div className="bg-slate-900 py-16 px-4 text-center mt-20">
-                <div className="max-w-4xl mx-auto">
-                    <Heart size={48} className="text-red-500 mx-auto mb-6" />
-                    <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">Better Together</h2>
-                    <p className="text-slate-400 text-lg md:text-xl font-medium mb-10 max-w-2xl mx-auto">
-                        We believe in growing as a community. Support our professionals and earn rewards for your trust and loyalty.
-                    </p>
-                    {isLoggedIn ? (
-                        <div className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full text-slate-900 font-black">
-                            Referrer Account Active
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setShowAuthModal(true)}
-                            className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-2xl shadow-blue-900/50 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95"
-                        >
-                            Sign In to Earn Rewards
-                        </button>
-                    )}
-                </div>
-            </div>
         </div>
     );
 };

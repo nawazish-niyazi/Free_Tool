@@ -34,21 +34,23 @@ const ProfessionalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    location: {
-        type: String,
-        required: true
+    locations: {
+        type: [String],
+        required: true,
+        default: []
     },
     category: {
         type: String,
-        required: true
+        default: ''
     },
-    service: {
-        type: String,
-        required: true
+    services: {
+        type: [String], // Replaces category/service with a list of skills/services
+        required: true,
+        default: []
     },
-    rating: {
-        type: Number,
-        default: 0
+    pendingServices: {
+        type: [String],
+        default: []
     },
     experience: {
         type: String,

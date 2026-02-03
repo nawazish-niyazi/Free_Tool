@@ -2,15 +2,28 @@ const express = require('express');
 const router = express.Router();
 const Professional = require('../models/Professional');
 const User = require('../models/User');
+const LocalHelpCategory = require('../models/LocalHelpCategory');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
+
+// @route   GET api/local-help/categories
+// @desc    Get all active service categories
+// @access  Public (Used in Signup/Filters)
+router.get('/categories', async (req, res) => {
+    try {
+        const categories = await LocalHelpCategory.find().sort({ name: 1 });
+        res.json({ success: true, data: categories });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+});
 
 // @route   PUT api/local-help/profile/update
 // @desc    Update professional profile details
 // @access  Private
 router.put('/profile/update', protect, async (req, res) => {
     try {
-        const { name, number, location, category, service, experience, minPrice, maxPrice, description } = req.body;
+        const { name, number, locations, services, experience, minPrice, maxPrice, description } = req.body;
 
         // Find professional profile linked to user
         let professional = await Professional.findOne({ userRef: req.user._id });
@@ -30,17 +43,19 @@ router.put('/profile/update', protect, async (req, res) => {
         // Update fields
         if (name) professional.name = name;
         if (number) professional.number = number;
-        if (location) professional.location = location;
+        if (locations) professional.locations = locations;
         if (category) professional.category = category;
-        if (service) professional.service = service;
+        if (services) professional.services = services;
         if (experience) professional.experience = experience;
         if (description !== undefined) professional.description = description;
+
+        // Ensure active professionals are approved
+        professional.status = 'approved';
+        professional.verified = true;
 
         // Update price range
         if (minPrice !== undefined) professional.priceRange.minPrice = Number(minPrice);
         if (maxPrice !== undefined) professional.priceRange.maxPrice = Number(maxPrice);
-
-        // Ensure verified status logic isn't bypassed (e.g. changing sensitive categories might require re-verification in future, currently open)
 
         const updatedPro = await professional.save();
 
@@ -60,20 +75,31 @@ router.put('/profile/update', protect, async (req, res) => {
 // @access  Private
 router.get('/professionals', protect, async (req, res) => {
     try {
-        const { location, category, service, search, minPrice, maxPrice } = req.query;
+        const { location, search, minPrice, maxPrice, category, service } = req.query;
         let query = { status: 'approved' }; // Only show approved professionals
 
-        // Case-insensitive matching for filters
-        if (location) query.location = { $regex: new RegExp(`^${location}$`, 'i') };
-        if (category) query.category = { $regex: new RegExp(`^${category}$`, 'i') };
-        if (service) query.service = { $regex: new RegExp(`^${service}$`, 'i') };
+        // Location Filter (Checks if ANY of the pro's locations match the query)
+        if (location) {
+            query.locations = { $regex: new RegExp(`^${location}$`, 'i') };
+        }
 
-        // General search across name, category, and service
+        // Category Filter
+        if (category) {
+            query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+        }
+
+        // Service Filter (Checks in services array)
+        if (service) {
+            query.services = { $regex: new RegExp(`^${service}$`, 'i') };
+        }
+
+        // General search across name, services and experience
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { category: { $regex: search, $options: 'i' } },
-                { service: { $regex: search, $options: 'i' } }
+                { services: { $elemMatch: { $regex: search, $options: 'i' } } },
+                { experience: { $regex: search, $options: 'i' } },
+                { category: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -81,8 +107,8 @@ router.get('/professionals', protect, async (req, res) => {
         if (minPrice) query['priceRange.minPrice'] = { $gte: Number(minPrice) };
         if (maxPrice) query['priceRange.maxPrice'] = { $lte: Number(maxPrice) };
 
-        console.log('Query filters:', { location, category, service, search });
-        console.log('MongoDB query:', JSON.stringify(query, null, 2));
+        console.log('Query filters:', { location, search });
+        // console.log('MongoDB query:', JSON.stringify(query, null, 2));
 
         const professionals = await Professional.find(query);
 
@@ -141,110 +167,127 @@ router.post('/review/:id', protect, async (req, res) => {
 });
 
 // @route   POST api/local-help/seed
-// @desc    Seed demo professionals (Dev only)
+// @desc    Seed demo professionals and categories (Dev only)
 // @access  Public
 router.post('/seed', async (req, res) => {
     try {
         // Clear existing
         await Professional.deleteMany();
+        await LocalHelpCategory.deleteMany();
 
-        const locs = ["smriti nagar", "Nehru Nagar", "Kohka", "Supela", "durg"];
+        const locs = ["Smriti Nagar", "Nehru Nagar", "Kohka", "Supela", "Durg"];
+
+        // Categories for Suggestion usage
         const serviceCategories = [
             {
                 name: "House Needs",
-                services: ["Electrician", "Plumber", "Carpenter", "Carpenter with Supplies", "Painter", "House Help", "Gardener", "Water Supply", "Lock and Key", "AC Repair", "RO Repair", "Garbage Collector"]
+                services: ["Electrician", "Plumber", "Carpenter", "Painter", "House Help", "Gardener", "AC Repair", "Pest Control", "Home Cleaning"]
+            },
+            {
+                name: "Construction",
+                services: ["Reja", "Mistri", "Contractor", "Construction Worker", "Tiles Mistri", "Plastering", "Centering"]
             },
             {
                 name: "Food & Help",
-                services: ["Cook", "Helper", "Local Mess"]
+                services: ["Cook", "Helper", "Local Mess", "Tiffin Service", "Waiter"]
             },
             {
                 name: "Automobile",
-                services: ["Driver", "Driver + Vehicle", "Auto Driver"]
+                services: ["Driver", "Car Mechanic", "Bike Mechanic", "Car Wash", "Towing Service"]
             },
             {
                 name: "Mechanics and Repairing",
-                services: ["Car Mechanic", "Bike Mechanic", "Car Wash", "RO Repair", "AC Repair", "Laptop Repair"]
+                services: ["Electronics Repair", "Laptop/Mobile Repair", "Appliance Repair", "Watch Repair", "Refrigerator Repair"]
             },
             {
                 name: "Entertainment",
-                services: ["Anchor", "Clown", "Poet", "Comedian", "Singer", "Dancer", "Sound Engineer", "DJ"]
+                services: ["DJ", "Event Manager", "Photographer", "Videographer", "Anchor/Emcee", "Magician"]
             },
             {
                 name: "Fashion & Makeup",
-                services: ["Makeup Artist", "Designer", "Tailor", "Salon", "Tattoo Artist"]
+                services: ["Tailor", "Makeup Artist", "Hair Stylist", "Fashion Designer", "Boutique", "Draper"]
             },
             {
                 name: "Art & Crafts",
-                services: ["Potter", "Sculpture Artist", "Wall Art", "Handicrafts", "Mehendi Artist"]
+                services: ["Painter (Artist)", "Sculptor", "Mehndi Artist", "Tattoo Artist", "Craft Teacher"]
             },
             {
                 name: "Freelancers",
-                services: ["Project Developer", "Practical Writer", "Photographer", "Editor", "Matchmaker", "Vet Grooming", "Vet Health"]
+                services: ["Web Developer", "Graphic Designer", "Content Writer", "SEO Expert", "Accountant", "Digital Marketer"]
             },
             {
                 name: "Tutors",
-                services: ["Educational Tutor", "Sign Language", "Braille", "Cooking Tutor", "Martial Art", "Yoga"]
+                services: ["Math Tutor", "English Tutor", "Yoga Instructor", "Music Teacher", "Dance Teacher", "Science Tutor"]
             },
             {
                 name: "Health & Care",
-                services: ["Doctor", "Caretaker", "Babysitter", "House Nurse", "Private Ambulance", "Therapist", "Counselor", "Massage Therapist", "Dietitian", "Mortuary"]
+                services: ["Nurse", "Caretaker", "Physiotherapist", "Baby Sitter", "Gym Trainer", "Elderly Care"]
             },
             {
                 name: "Religious Center",
-                services: ["Pandit", "Qadri & Imam", "Church Father", "Bhajan Mandli"]
+                services: ["Pandit", "Priest", "Astrology", "Vastu Consultant"]
             },
             {
                 name: "Govt Center",
-                services: ["Choice Center", "NGO Helpline"]
+                services: ["Aadhar Service", "Pan Card Service", "CSC Center", "E-Mitra"]
             },
             {
                 name: "Caterers & Tent",
-                services: ["Catering", "Tent", "Catering + Tent", "Transgender Help"]
-            },
-            {
-                name: "Others",
-                services: ["Construction Worker", "Donation & Recycling"]
+                services: ["Wedding Caterer", "Tent House", "Decoration Service", "Flower Decor"]
             }
         ];
+
+        // Seed categories
+        await LocalHelpCategory.insertMany(serviceCategories);
 
         const fNames = ["Amit", "Rahul", "Vijay", "Suresh", "Deepak", "Rajesh", "Mukesh", "Sanjay", "Anil", "Sunil", "Manish", "Pankaj"];
         const lNames = ["Sharma", "Verma", "Gupta", "Patel", "Singh", "Kumar", "Yadav", "Mishra"];
 
         const professionals = [];
 
-        for (const loc of locs) {
-            for (const cat of serviceCategories) {
-                for (const service of cat.services) {
-                    // Create 1-2 professionals for each service in each location
-                    const count = Math.floor(Math.random() * 2) + 1;
-                    for (let i = 0; i < count; i++) {
-                        const firstName = fNames[Math.floor(Math.random() * fNames.length)];
-                        const lastName = lNames[Math.floor(Math.random() * lNames.length)];
-                        professionals.push({
-                            name: `${firstName} ${lastName}`,
-                            number: `+91 ${90000 + Math.floor(Math.random() * 10000)} ${10000 + Math.floor(Math.random() * 90000)}`,
-                            location: loc,
-                            category: cat.name,
-                            service: service,
-                            rating: (4 + Math.random()).toFixed(1),
-                            experience: `${Math.floor(Math.random() * 15) + 1} years`,
-                            verified: true,
-                            priceRange: {
-                                minPrice: Math.floor(Math.random() * 500) + 200, // Random 200-700
-                                maxPrice: Math.floor(Math.random() * 1000) + 800 // Random 800-1800
-                            },
-                            reviews: [
-                                {
-                                    user: "Demo User",
-                                    rating: 5,
-                                    comment: "Excellent work and very professional!"
-                                }
-                            ]
-                        });
-                    }
-                }
+        // Create 20 random professionals
+        for (let i = 0; i < 20; i++) {
+            // Pick random services (1 to 3)
+            const randomCategory = serviceCategories[Math.floor(Math.random() * serviceCategories.length)];
+            const numServices = Math.floor(Math.random() * 2) + 1;
+            const myServices = [];
+            for (let j = 0; j < numServices; j++) {
+                myServices.push(randomCategory.services[Math.floor(Math.random() * randomCategory.services.length)]);
             }
+            // Dedup
+            const uniqueServices = [...new Set(myServices)];
+
+            // Pick random locations (1 to 3)
+            const numLocs = Math.floor(Math.random() * 3) + 1;
+            const myLocs = [];
+            for (let j = 0; j < numLocs; j++) {
+                myLocs.push(locs[Math.floor(Math.random() * locs.length)]);
+            }
+            const uniqueLocs = [...new Set(myLocs)];
+
+            const firstName = fNames[Math.floor(Math.random() * fNames.length)];
+            const lastName = lNames[Math.floor(Math.random() * lNames.length)];
+
+            professionals.push({
+                name: `${firstName} ${lastName}`,
+                number: `+91 ${90000 + Math.floor(Math.random() * 10000)} ${10000 + Math.floor(Math.random() * 90000)}`,
+                locations: uniqueLocs,
+                services: uniqueServices,
+                rating: (4 + Math.random()).toFixed(1),
+                experience: `${Math.floor(Math.random() * 15) + 1} years`,
+                verified: true,
+                priceRange: {
+                    minPrice: Math.floor(Math.random() * 500) + 200,
+                    maxPrice: Math.floor(Math.random() * 1000) + 800
+                },
+                reviews: [
+                    {
+                        user: "Demo User",
+                        rating: 5,
+                        comment: "Excellent work and very professional!"
+                    }
+                ]
+            });
         }
 
         await Professional.insertMany(professionals);
@@ -255,21 +298,66 @@ router.post('/seed', async (req, res) => {
     }
 });
 
+// @route   POST api/local-help/sync-categories
+// @desc    Sync/Add missing categories without deleting professionals
+// @access  Public
+router.post('/sync-categories', async (req, res) => {
+    try {
+        const serviceCategories = [
+            { name: "House Needs", services: ["Electrician", "Plumber", "Carpenter", "Painter", "House Help", "Gardener", "AC Repair", "Pest Control", "Home Cleaning"] },
+            { name: "Construction", services: ["Reja", "Mistri", "Contractor", "Construction Worker", "Tiles Mistri", "Plastering", "Centering"] },
+            { name: "Food & Help", services: ["Cook", "Helper", "Local Mess", "Tiffin Service", "Waiter"] },
+            { name: "Automobile", services: ["Driver", "Car Mechanic", "Bike Mechanic", "Car Wash", "Towing Service"] },
+            { name: "Mechanics and Repairing", services: ["Electronics Repair", "Laptop/Mobile Repair", "Appliance Repair", "Watch Repair", "Refrigerator Repair"] },
+            { name: "Entertainment", services: ["DJ", "Event Manager", "Photographer", "Videographer", "Anchor/Emcee", "Magician"] },
+            { name: "Fashion & Makeup", services: ["Tailor", "Makeup Artist", "Hair Stylist", "Fashion Designer", "Boutique", "Draper"] },
+            { name: "Art & Crafts", services: ["Painter (Artist)", "Sculptor", "Mehndi Artist", "Tattoo Artist", "Craft Teacher"] },
+            { name: "Freelancers", services: ["Web Developer", "Graphic Designer", "Content Writer", "SEO Expert", "Accountant", "Digital Marketer"] },
+            { name: "Tutors", services: ["Math Tutor", "English Tutor", "Yoga Instructor", "Music Teacher", "Dance Teacher", "Science Tutor"] },
+            { name: "Health & Care", services: ["Nurse", "Caretaker", "Physiotherapist", "Baby Sitter", "Gym Trainer", "Elderly Care"] },
+            { name: "Religious Center", services: ["Pandit", "Priest", "Astrology", "Vastu Consultant"] },
+            { name: "Govt Center", services: ["Aadhar Service", "Pan Card Service", "CSC Center", "E-Mitra"] },
+            { name: "Caterers & Tent", services: ["Wedding Caterer", "Tent House", "Decoration Service", "Flower Decor"] }
+        ];
+
+        let added = 0;
+        let updated = 0;
+
+        for (const cat of serviceCategories) {
+            const existing = await LocalHelpCategory.findOne({ name: cat.name });
+            if (existing) {
+                const mergedServices = [...new Set([...existing.services, ...cat.services])];
+                existing.services = mergedServices;
+                await existing.save();
+                updated++;
+            } else {
+                await LocalHelpCategory.create(cat);
+                added++;
+            }
+        }
+        res.json({ success: true, message: `Sync complete. Added ${added}, Updated ${updated} categories.` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // @route   POST api/local-help/worker-signup
 // @desc    Worker signup (Creates User + Professional)
 // @access  Public
 router.post('/worker-signup', async (req, res) => {
     try {
         console.log('Worker Signup Request:', req.body.number);
-        let { name, number, location, category, service, experience, description, minPrice, maxPrice, email, password, userId } = req.body;
+        let { name, number, locations, services, experience, description, minPrice, maxPrice, email, password, userId } = req.body;
 
         // Sanitize inputs
         number = String(number).trim();
         email = email ? String(email).trim() : '';
-        if (!name || !number || !location || !category || !service || !experience || minPrice === undefined || minPrice === '') {
+
+        // Basic validation
+        if (!name || !number || !locations || locations.length === 0 || !services || services.length === 0 || !experience || minPrice === undefined) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields except description and max price are required'
+                message: 'All fields are required. Please select at least one location and one service.'
             });
         }
 
@@ -336,14 +424,29 @@ router.post('/worker-signup', async (req, res) => {
             }
         }
 
+        // Fetch all predefined services to check against
+        const allCategories = await LocalHelpCategory.find();
+        const predefinedServices = new Set(allCategories.flatMap(cat => cat.services.map(s => s.toLowerCase())));
+
+        const approvedServices = [];
+        const pendingServices = [];
+
+        services.forEach(s => {
+            if (predefinedServices.has(s.toLowerCase())) {
+                approvedServices.push(s);
+            } else {
+                pendingServices.push(s);
+            }
+        });
+
         // Create approved professional record linked to user
         console.log('Creating professional record...');
         const newWorker = await Professional.create({
             name,
             number,
-            location,
-            category,
-            service,
+            locations, // Array
+            services: approvedServices,  // Predefined skills
+            pendingServices: pendingServices, // Custom skills for admin approval
             experience,
             description: description || '',
             priceRange: {

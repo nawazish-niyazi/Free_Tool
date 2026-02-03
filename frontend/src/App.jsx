@@ -15,6 +15,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import LandingPage from './pages/LandingPage';
 import WorkerSignup from './pages/WorkerSignup';
 import RewardsReferralPage from './pages/RewardsReferralPage';
+import FinancialAidPage from './pages/FinancialAidPage';
+import FinancialAidSignup from './pages/FinancialAidSignup';
+import EventsPage from './pages/EventsPage';
 
 // Placeholders for now
 // const PdfTools = () => <div className="p-10">PDF Tools Page (Coming Soon)</div>;
@@ -23,6 +26,7 @@ import RewardsReferralPage from './pages/RewardsReferralPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import AuthModal from './components/AuthModal';
+import Footer from './components/Footer';
 
 const ProtectedAdminRoute = ({ children }) => {
   const { isAdminLoggedIn, adminLoading } = useAdmin();
@@ -79,6 +83,9 @@ function AppContent() {
         <Route path="/q/:shortId" element={<LandingPage />} />
         <Route path="/worker-signup" element={<WorkerSignup />} />
         <Route path="/rewards-referral" element={<RewardsReferralPage />} />
+        <Route path="/financial-aid" element={<FinancialAidPage />} />
+        <Route path="/financial-aid/register" element={<FinancialAidSignup />} />
+        <Route path="/events" element={<EventsPage />} />
 
         {/* Admin Routes */}
         <Route path="/management/login" element={<AdminLogin />} />
@@ -91,6 +98,7 @@ function AppContent() {
           }
         />
       </Routes>
+      {!pathname.startsWith('/management') && <Footer />}
     </div>
   );
 }

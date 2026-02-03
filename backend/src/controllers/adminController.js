@@ -265,4 +265,51 @@ exports.updateWorkerStatus = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+// @desc    Get professionals with pending skills
+exports.getPendingSkills = async (req, res) => {
+    try {
+        const pros = await Professional.find({ 'pendingServices.0': { $exists: true } });
+        res.json({ success: true, count: pros.length, data: pros });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
 
+// @desc    Approve a specific pending skill
+exports.approveSkill = async (req, res) => {
+    try {
+        const { skill } = req.body;
+        const professional = await Professional.findById(req.params.id);
+
+        if (!professional) return res.status(404).json({ success: false, message: 'Professional not found' });
+
+        if (professional.pendingServices.includes(skill)) {
+            professional.pendingServices = professional.pendingServices.filter(s => s !== skill);
+            if (!professional.services.includes(skill)) {
+                professional.services.push(skill);
+            }
+            await professional.save();
+            res.json({ success: true, message: 'Skill approved', data: professional });
+        } else {
+            res.status(400).json({ success: false, message: 'Skill not found in pending list' });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Reject a specific pending skill
+exports.rejectSkill = async (req, res) => {
+    try {
+        const { skill } = req.body;
+        const professional = await Professional.findById(req.params.id);
+
+        if (!professional) return res.status(404).json({ success: false, message: 'Professional not found' });
+
+        professional.pendingServices = professional.pendingServices.filter(s => s !== skill);
+        await professional.save();
+        res.json({ success: true, message: 'Skill rejected', data: professional });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

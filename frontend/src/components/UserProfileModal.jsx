@@ -5,6 +5,42 @@ import { useAuth } from '../context/AuthContext';
 import Cropper from 'react-easy-crop';
 import api from '../api/axios';
 
+const parseExperience = (expStr) => {
+    if (!expStr) return [];
+    if (!expStr.includes('(')) {
+        return [{
+            skill: expStr.trim(),
+            years: 'N/A',
+            price: null
+        }];
+    }
+
+    const parts = expStr.split(', ');
+    return parts.map(part => {
+        const match = part.match(/^(.*)\s*\(([^)]+)\)$/);
+        if (match) {
+            const skill = match[1].trim();
+            const detail = match[2].trim();
+            let years = 'N/A';
+            let price = null;
+
+            if (detail.includes('@ ₹')) {
+                const subParts = detail.split('@ ₹');
+                years = subParts[0].trim() || 'N/A';
+                price = subParts[1].trim();
+            } else {
+                years = detail;
+            }
+
+            if (years !== 'N/A' && !years.toLowerCase().includes('year')) {
+                years += ' Years';
+            }
+            return { skill, years, price };
+        }
+        return { skill: part.trim(), years: 'N/A', price: null };
+    });
+};
+
 const UserProfileModal = ({ isOpen, onClose }) => {
     const { user, professional, logout, secureLogin, setShowAuthModal } = useAuth();
     const [activeTab, setActiveTab] = useState('personal'); // personal, professional
@@ -40,6 +76,15 @@ const UserProfileModal = ({ isOpen, onClose }) => {
         maxPrice: ''
     });
     const [isEditingPro, setIsEditingPro] = useState(false);
+    const [localSkills, setLocalSkills] = useState([]);
+    const [newSkill, setNewSkill] = useState({ skill: '', years: '', price: '' });
+
+    // Skill Suggestions State
+    const [skillSuggestions, setSkillSuggestions] = useState([]);
+    const [filteredSkillSuggestions, setFilteredSkillSuggestions] = useState([]);
+    const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
+    const [activeSkillIndex, setActiveSkillIndex] = useState(-1);
+    const skillOptionsRef = useRef(null);
 
     // Image Cropping State
     const [imageSrc, setImageSrc] = useState(null);
@@ -59,19 +104,51 @@ const UserProfileModal = ({ isOpen, onClose }) => {
             });
         }
         if (professional) {
+            // Parse skills to derive data if necessary
+            const parsedExps = parseExperience(professional.experience || '');
+            setLocalSkills(parsedExps);
+            const derivedServices = professional.services?.length > 0
+                ? professional.services
+                : (parsedExps.length > 0 ? parsedExps.map(e => e.skill) : []);
+
+            const derivedMinPrice = professional.priceRange?.minPrice ||
+                (parsedExps.length > 0 ? Math.min(...parsedExps.map(e => parseInt(e.price) || Infinity).filter(p => p !== Infinity)) : '');
+
             setProData({
                 name: professional.name || '',
                 number: professional.number || '',
-                location: professional.location || '',
-                category: professional.category || '',
-                service: professional.service || '',
+                location: Array.isArray(professional.locations) ? professional.locations.join(', ') : (professional.location || ''),
+                category: professional.category || (professional.categories?.[0] || ''),
+                service: derivedServices.join(', '), // Show all services joined
                 experience: professional.experience || '',
                 description: professional.description || '',
-                minPrice: professional.priceRange?.minPrice || '',
+                minPrice: derivedMinPrice && derivedMinPrice !== Infinity ? derivedMinPrice : '',
                 maxPrice: professional.priceRange?.maxPrice || ''
             });
         }
     }, [user, professional, isOpen]);
+
+    // Flatten all services for suggestions
+    useEffect(() => {
+        const allServices = serviceCategories.flatMap(cat => cat.services);
+        setSkillSuggestions([...new Set(allServices)].sort());
+    }, []);
+
+    // Filter suggestions based on input
+    useEffect(() => {
+        if (newSkill.skill.trim()) {
+            const filtered = skillSuggestions.filter(s =>
+                s.toLowerCase().includes(newSkill.skill.toLowerCase()) &&
+                !localSkills.some(ls => ls.skill.toLowerCase() === s.toLowerCase())
+            ).slice(0, 10);
+            setFilteredSkillSuggestions(filtered);
+            setShowSkillSuggestions(filtered.length > 0);
+            setActiveSkillIndex(-1);
+        } else {
+            setFilteredSkillSuggestions([]);
+            setShowSkillSuggestions(false);
+        }
+    }, [newSkill.skill, localSkills, skillSuggestions]);
 
     const handlePersonalChange = (e) => {
         setPersonalData({ ...personalData, [e.target.name]: e.target.value });
@@ -208,11 +285,70 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     const selectedCategory = serviceCategories.find(cat => cat.name === proData.category);
     const availableServices = selectedCategory ? selectedCategory.services : [];
 
+    const handleAddLocalSkill = () => {
+        if (!newSkill.skill.trim()) return;
+        setLocalSkills([...localSkills, { ...newSkill }]);
+        setNewSkill({ skill: '', years: '', price: '' });
+    };
+
+    const handleRemoveLocalSkill = (index) => {
+        setLocalSkills(localSkills.filter((_, i) => i !== index));
+    };
+
+    const handleUpdateLocalSkill = (index, field, value) => {
+        const updated = [...localSkills];
+        updated[index][field] = value;
+        setLocalSkills(updated);
+    };
+
+    const handleSkillKeyDown = (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveSkillIndex(prev => (prev < filteredSkillSuggestions.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveSkillIndex(prev => (prev > -1 ? prev - 1 : prev));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeSkillIndex >= 0 && activeSkillIndex < filteredSkillSuggestions.length) {
+                setNewSkill({ ...newSkill, skill: filteredSkillSuggestions[activeSkillIndex] });
+                setShowSkillSuggestions(false);
+            } else if (newSkill.skill.trim()) {
+                handleAddLocalSkill();
+            }
+        } else if (e.key === 'Escape') {
+            setShowSkillSuggestions(false);
+        }
+    };
+
+    // Auto-scroll for skill suggestions
+    useEffect(() => {
+        if (activeSkillIndex >= 0 && skillOptionsRef.current) {
+            const activeElement = skillOptionsRef.current.children[activeSkillIndex];
+            if (activeElement) {
+                activeElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }, [activeSkillIndex]);
+
     const saveProfessionalProfile = async () => {
         setLoading(true);
         try {
+            // Consolidate localSkills into experience string
+            const consolidatedExp = localSkills.map(s => {
+                const years = s.years || '0';
+                const price = s.price;
+                return price
+                    ? `${s.skill} (${years} @ ₹${price})`
+                    : `${s.skill} (${years})`;
+            }).join(', ');
+
             const res = await api.put('/local-help/profile/update', {
                 ...proData,
+                services: localSkills.map(s => s.skill),
+                locations: proData.location.split(',').map(l => l.trim()).filter(l => l !== ''),
+                experience: consolidatedExp,
+                category: proData.category,
                 minPrice: proData.minPrice,
                 maxPrice: proData.maxPrice ? proData.maxPrice : 0
             });
@@ -494,54 +630,176 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         )}
                                     </div>
                                     <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Service</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Service(s)</label>
                                         {isEditingPro ? (
-                                            <select
+                                            <input
+                                                type="text"
                                                 name="service"
                                                 value={proData.service}
                                                 onChange={handleProChange}
-                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl font-semibold text-slate-900 outline-none transition-all"
-                                                disabled={!proData.category}
-                                            >
-                                                <option value="">Select Service</option>
-                                                {availableServices.map(srv => (
-                                                    <option key={srv} value={srv}>{srv}</option>
-                                                ))}
-                                            </select>
+                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-xl font-semibold text-slate-900 transition-all font-semibold"
+                                                placeholder="e.g. Electrician, Painter"
+                                            />
                                         ) : (
                                             <div className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl font-semibold text-slate-900 opacity-70">
-                                                {proData.service}
+                                                {proData.service || 'No services listed'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="group md:col-span-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 block">Skill Experience & Payouts</label>
+
+                                        {isEditingPro ? (
+                                            <div className="space-y-4">
+                                                {/* Skill List Editor */}
+                                                <div className="space-y-3">
+                                                    {localSkills.map((s, i) => (
+                                                        <div key={i} className="flex flex-col md:flex-row gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 relative group/item">
+                                                            <input
+                                                                type="text"
+                                                                value={s.skill}
+                                                                onChange={(e) => handleUpdateLocalSkill(i, 'skill', e.target.value)}
+                                                                placeholder="Skill Name"
+                                                                className="flex-[2] px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={s.years}
+                                                                onChange={(e) => handleUpdateLocalSkill(i, 'years', e.target.value)}
+                                                                placeholder="Exp (Years)"
+                                                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                            />
+                                                            <div className="flex-1 relative">
+                                                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={s.price || ''}
+                                                                    onChange={(e) => handleUpdateLocalSkill(i, 'price', e.target.value)}
+                                                                    placeholder="Payout"
+                                                                    className="w-full pl-6 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleRemoveLocalSkill(i)}
+                                                                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Add New Skill Form */}
+                                                <div className="flex flex-col md:flex-row gap-2 p-3 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 relative">
+                                                    <div className="flex-[2] relative">
+                                                        <input
+                                                            type="text"
+                                                            value={newSkill.skill}
+                                                            onChange={(e) => setNewSkill({ ...newSkill, skill: e.target.value })}
+                                                            onKeyDown={handleSkillKeyDown}
+                                                            onBlur={() => setTimeout(() => setShowSkillSuggestions(false), 200)}
+                                                            onFocus={() => {
+                                                                if (newSkill.skill.trim() && filteredSkillSuggestions.length > 0) {
+                                                                    setShowSkillSuggestions(true);
+                                                                }
+                                                            }}
+                                                            placeholder="New Skill (e.g. Electrician)"
+                                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                        />
+
+                                                        <AnimatePresence>
+                                                            {showSkillSuggestions && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: -10 }}
+                                                                    className="absolute bottom-full mb-2 left-0 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-[120] overflow-hidden max-h-48 overflow-y-auto"
+                                                                    ref={skillOptionsRef}
+                                                                >
+                                                                    {filteredSkillSuggestions.map((s, idx) => (
+                                                                        <button
+                                                                            key={s}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setNewSkill({ ...newSkill, skill: s });
+                                                                                setShowSkillSuggestions(false);
+                                                                            }}
+                                                                            className={`w-full px-4 py-2 text-left text-sm transition-colors ${idx === activeSkillIndex
+                                                                                ? 'bg-blue-600 text-white font-bold'
+                                                                                : 'text-slate-700 hover:bg-blue-50'
+                                                                                }`}
+                                                                        >
+                                                                            {s}
+                                                                        </button>
+                                                                    ))}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        value={newSkill.years}
+                                                        onChange={(e) => setNewSkill({ ...newSkill, years: e.target.value })}
+                                                        placeholder="Exp"
+                                                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                    <div className="flex-1 relative">
+                                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            value={newSkill.price}
+                                                            onChange={(e) => setNewSkill({ ...newSkill, price: e.target.value })}
+                                                            placeholder="Pay"
+                                                            className="w-full pl-6 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleAddLocalSkill();
+                                                        }}
+                                                        className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-black uppercase tracking-tight hover:bg-slate-800 transition-all font-black"
+                                                    >
+                                                        Add
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-2">
+                                                {parseExperience(proData.experience).map((exp, i) => (
+                                                    <div key={i} className="flex flex-col px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl min-w-[140px]">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{exp.skill}</span>
+                                                        <div className="flex items-center justify-between gap-2 mt-1">
+                                                            <span className="text-sm font-black text-blue-600 leading-none">{exp.years}</span>
+                                                            {exp.price && (
+                                                                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 transition-all">
+                                                                    ₹{exp.price}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {(!proData.experience || proData.experience === '') && (
+                                                    <span className="text-sm text-slate-400 italic px-1">No skills listed yet.</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
                                     <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Experience</label>
-                                        <input
-                                            type="text"
-                                            name="experience"
-                                            value={proData.experience}
-                                            disabled={!isEditingPro}
-                                            onChange={handleProChange}
-                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-xl font-semibold text-slate-900 disabled:border-0 disabled:opacity-70 transition-all"
-                                        />
-                                    </div>
-                                    <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Location</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Location(s)</label>
                                         {isEditingPro ? (
-                                            <select
+                                            <input
+                                                type="text"
                                                 name="location"
                                                 value={proData.location}
                                                 onChange={handleProChange}
-                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl font-semibold text-slate-900 outline-none transition-all"
-                                            >
-                                                <option value="">Select Location</option>
-                                                {locations.map(loc => (
-                                                    <option key={loc} value={loc}>{loc}</option>
-                                                ))}
-                                            </select>
+                                                className="w-full px-4 py-3 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-500 rounded-xl font-semibold text-slate-900 transition-all font-semibold"
+                                                placeholder="e.g. Smriti Nagar, Nehru Nagar"
+                                            />
                                         ) : (
                                             <div className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl font-semibold text-slate-900 opacity-70">
-                                                {proData.location}
+                                                {proData.location || 'No locations listed'}
                                             </div>
                                         )}
                                     </div>

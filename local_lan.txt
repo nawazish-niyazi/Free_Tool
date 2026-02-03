@@ -6,12 +6,12 @@ To run the code on LAN (Local Area Network):
 **Instructions:**
 - Connect your mobile or other devices to the SAME Wi-Fi network as this computer.
 - Open the browser on your device and go to: `http://192.168.1.6:5173`
-- **NEW**: You no longer need to update `.env` files manually! The system now automatically detects your IP and connects to the backend.
+- **NEW**: The system automatically detects your IP and connects to the backend, but ensures the .env files are correctly set up for your current network.
 
 **Troubleshooting:**
 - If the frontend doesn't load, ensure your firewall allows Node.js/Vite connections.
-- If the backend API calls fail, check that the backend is running and that your phone can ping your PC.
-
+- If the backend API calls fail (e.g. "Login Failed"), check that the VITE_API_URL in frontend/.env matches your IP and port 5000.
+- Ensure your phone can ping your PC IP: 192.168.1.6
 
 Current IP Config:
 IP: 192.168.1.6

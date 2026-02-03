@@ -42,56 +42,56 @@ const PdfTools = () => {
             description: 'Convert Word, Excel, PowerPoint, and Images to PDF.',
             icon: FileText,
             to: '/pdf-tools?mode=to-pdf',
-            color: 'bg-indigo-50/50 hover:bg-indigo-50'
+            color: 'bg-indigo-100 hover:bg-indigo-200 border-2 border-indigo-900/5'
         },
         {
             title: 'Compress PDF',
             description: 'Reduce PDF file size while maintaining quality.',
             icon: Layers,
             to: '/pdf-tools?mode=compress',
-            color: 'bg-rose-50/50 hover:bg-rose-50'
+            color: 'bg-rose-100 hover:bg-rose-200 border-2 border-rose-900/5'
         },
         {
             title: 'Convert from PDF',
             description: 'Convert PDF to Word, Excel, PowerPoint, and Images.',
             icon: FileType,
             to: '/pdf-tools?mode=from-pdf',
-            color: 'bg-blue-50/50 hover:bg-blue-50'
+            color: 'bg-blue-100 hover:bg-blue-200 border-2 border-blue-900/5'
         },
         {
             title: 'Protect PDF',
             description: 'Encrypt your PDF with a password.',
             icon: Lock,
             to: '/pdf-tools?mode=protect',
-            color: 'bg-green-50/50 hover:bg-green-50'
+            color: 'bg-emerald-100 hover:bg-emerald-200 border-2 border-emerald-900/5'
         },
         {
             title: 'Unlock PDF',
             description: 'Remove password protection from PDF.',
             icon: Unlock,
             to: '/pdf-tools?mode=unlock',
-            color: 'bg-red-50/50 hover:bg-red-50'
+            color: 'bg-slate-200 hover:bg-slate-300 border-2 border-slate-900/5'
         },
         {
             title: 'Add Watermark',
             description: 'Add text or image watermarks to your PDF.',
             icon: Droplets,
             to: '/watermark',
-            color: 'bg-purple-50/50 hover:bg-purple-50'
+            color: 'bg-purple-100 hover:bg-purple-200 border-2 border-purple-900/5'
         },
         {
             title: 'Remove Watermark',
             description: 'Attempt to remove watermarks from PDF.',
             icon: Eraser,
             to: '/remove-watermark',
-            color: 'bg-orange-50/50 hover:bg-orange-50'
+            color: 'bg-orange-100 hover:bg-orange-200 border-2 border-orange-900/5'
         },
         {
             title: 'Sign PDF',
             description: 'Sign documents electronically.',
             icon: Zap,
             to: '/esign',
-            color: 'bg-amber-50/50 hover:bg-amber-50'
+            color: 'bg-amber-100 hover:bg-amber-200 border-2 border-amber-900/5'
         }
     ];
 

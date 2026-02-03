@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, LogOut, User as UserIcon, AlertCircle, X } from 'lucide-react';
+import { Zap, LogOut, User as UserIcon, AlertCircle, X, ChevronDown, FileText, Image as ImageIcon, QrCode, Receipt } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import UserProfileModal from './UserProfileModal';
@@ -10,6 +10,7 @@ const Navbar = () => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [isToolsOpen, setIsToolsOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -28,15 +29,47 @@ const Navbar = () => {
                             <span className="text-2xl font-black text-slate-900 tracking-tight">N.A.I.R <span className="text-blue-600">Solutions</span></span>
                         </Link>
 
-                        <div className="hidden md:flex space-x-6 items-center">
-                            <Link to="/" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Home</Link>
-                            <Link to="/pdf-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">PDF Tools</Link>
-                            <Link to="/image-tools" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Image Tools</Link>
-                            <Link to="/qr-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">QR Generator</Link>
-                            <Link to="/invoice-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Invoice Generator</Link>
-                            <Link to="/rewards-referral" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">R&R</Link>
+                        <div className="hidden md:flex space-x-4 lg:space-x-6 items-center">
+                            <Link to="/" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base">Home</Link>
+
+                            {/* Tools Dropdown */}
+                            <div className="relative group"
+                                onMouseEnter={() => setIsToolsOpen(true)}
+                                onMouseLeave={() => setIsToolsOpen(false)}>
+                                <button className="flex items-center gap-1 text-slate-600 group-hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base py-7">
+                                    Tools <ChevronDown size={14} className={`transition-transform duration-200 ${isToolsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isToolsOpen && (
+                                    <div className="absolute top-full left-0 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-[60]">
+                                        <Link to="/pdf-tools" onClick={() => setIsToolsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all group/item">
+                                            <div className="p-2 bg-red-50 text-red-500 rounded-lg group-hover/item:bg-red-100 transition-colors">
+                                                <FileText size={18} />
+                                            </div>
+                                            <span className="font-bold text-sm">PDF Tools</span>
+                                        </Link>
+                                        <Link to="/image-tools" onClick={() => setIsToolsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all group/item">
+                                            <div className="p-2 bg-orange-50 text-orange-500 rounded-lg group-hover/item:bg-orange-100 transition-colors">
+                                                <ImageIcon size={18} />
+                                            </div>
+                                            <span className="font-bold text-sm">Image Tools</span>
+                                        </Link>
+                                        <Link to="/qr-generator" onClick={() => setIsToolsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all group/item">
+                                            <div className="p-2 bg-purple-50 text-purple-500 rounded-lg group-hover/item:bg-purple-100 transition-colors">
+                                                <QrCode size={18} />
+                                            </div>
+                                            <span className="font-bold text-sm">QR Generator</span>
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Link to="/invoice-generator" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base whitespace-nowrap">Invoice Generator</Link>
+                            <Link to="/financial-aid" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base whitespace-nowrap">Financial Aids</Link>
+                            <Link to="/events" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base whitespace-nowrap">Events</Link>
+                            <Link to="/rewards-referral" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base">Deals</Link>
                             {isLoggedIn && (
-                                <Link to="/local-help" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-sm lg:text-base">Local Help</Link>
+                                <Link to="/local-help" className="text-slate-600 hover:text-blue-600 font-bold transition-all text-xs lg:text-sm xl:text-base whitespace-nowrap">Local Help</Link>
                             )}
 
                             <div className="h-6 w-px bg-slate-200 mx-1" />
@@ -122,15 +155,31 @@ const Navbar = () => {
                             exit={{ opacity: 0, height: 0 }}
                             className="md:hidden bg-white border-t border-slate-50 overflow-hidden"
                         >
-                            <div className="px-3 md:px-4 py-4 md:py-6 space-y-4">
-                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Home</Link>
-                                <Link to="/pdf-tools" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">PDF Tools</Link>
-                                <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Image Tools</Link>
-                                <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">QR Generator</Link>
-                                <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Invoice Generator</Link>
-                                <Link to="/rewards-referral" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">R&R</Link>
+                            <div className="px-3 md:px-4 py-4 md:py-6 space-y-2">
+                                <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Home</Link>
+
+                                {/* Mobile Tools Section */}
+                                <div className="space-y-1 py-1">
+                                    <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">Tools</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Link to="/pdf-tools" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-slate-600 font-bold hover:bg-red-50 rounded-xl transition-all text-xs">
+                                            <FileText size={14} className="text-red-500" /> PDF Tools
+                                        </Link>
+                                        <Link to="/image-tools" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-slate-600 font-bold hover:bg-orange-50 rounded-xl transition-all text-xs">
+                                            <ImageIcon size={14} className="text-orange-500" /> Image Tools
+                                        </Link>
+                                        <Link to="/qr-generator" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-slate-600 font-bold hover:bg-purple-50 rounded-xl transition-all text-xs">
+                                            <QrCode size={14} className="text-purple-500" /> QR Gen
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                <Link to="/invoice-generator" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Invoice Generator</Link>
+                                <Link to="/financial-aid" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Financial Aids</Link>
+                                <Link to="/events" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Events Near Me</Link>
+                                <Link to="/rewards-referral" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Deals</Link>
                                 {isLoggedIn && (
-                                    <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 md:px-4 md:py-3 text-slate-900 font-black hover:bg-blue-50 rounded-2xl transition-all">Local Help</Link>
+                                    <Link to="/local-help" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 text-slate-700 font-bold hover:bg-blue-50 rounded-xl transition-all">Local Help</Link>
                                 )}
 
                                 <div className="pt-4 border-t border-slate-50">

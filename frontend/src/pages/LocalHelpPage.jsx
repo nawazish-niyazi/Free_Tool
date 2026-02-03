@@ -7,71 +7,71 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProcessingOverlay from '../components/ProcessingOverlay';
 
-const CATEGORIES = [
-    {
-        name: "House Needs",
-        services: ["Electrician", "Plumber", "Carpenter", "Carpenter with Supplies", "Painter", "House Help", "Gardener", "Water Supply", "Lock and Key", "AC Repair", "RO Repair", "Garbage Collector"]
-    },
-    {
-        name: "Construction",
-        services: ["Reja", "Mistri", "Contractor", "Construction Worker", "Tiles Mistri", "Centering Worker"]
-    },
-    {
-        name: "Food & Help",
-        services: ["Cook", "Helper", "Local Mess"]
-    },
-    {
-        name: "Automobile",
-        services: ["Driver", "Driver + Vehicle", "Auto Driver"]
-    },
-    {
-        name: "Mechanics and Repairing",
-        services: ["Car Mechanic", "Bike Mechanic", "Car Wash", "RO Repair", "AC Repair", "Laptop Repair"]
-    },
-    {
-        name: "Entertainment",
-        services: ["Anchor", "Clown", "Poet", "Comedian", "Singer", "Dancer", "Sound Engineer", "DJ"]
-    },
-    {
-        name: "Fashion & Makeup",
-        services: ["Makeup Artist", "Designer", "Tailor", "Salon", "Tattoo Artist"]
-    },
-    {
-        name: "Art & Crafts",
-        services: ["Potter", "Sculpture Artist", "Wall Art", "Handicrafts", "Mehendi Artist"]
-    },
-    {
-        name: "Freelancers",
-        services: ["Project Developer", "Practical Writer", "Photographer", "Editor", "Matchmaker", "Vet Grooming", "Vet Health"]
-    },
-    {
-        name: "Tutors",
-        services: ["Educational Tutor", "Sign Language", "Braille", "Cooking Tutor", "Martial Art", "Yoga"]
-    },
-    {
-        name: "Health & Care",
-        services: ["Doctor", "Caretaker", "Babysitter", "House Nurse", "Private Ambulance", "Therapist", "Counselor", "Massage Therapist", "Dietitian", "Mortuary"]
-    },
-    {
-        name: "Religious Center",
-        services: ["Pandit", "Qadri & Imam", "Church Father", "Bhajan Mandli"]
-    },
-    {
-        name: "Govt Center",
-        services: ["Choice Center", "NGO Helpline"]
-    },
-    {
-        name: "Caterers & Tent",
-        services: ["Catering", "Tent", "Catering + Tent"]
-    },
-    {
-        name: "Miscellaneous",
-        services: ["Transgender Help", "Donation & Recycling"]
-    }
-];
-
 const LOCATIONS = ["Smriti Nagar", "Nehru Nagar", "Kohka", "Supela", "Durg"];
-const ALL_SERVICES = [...new Set(CATEGORIES.flatMap(cat => cat.services))].sort();
+
+const parseExperience = (expStr) => {
+    if (!expStr) return [];
+
+    // Fallback for old simple strings
+    if (!expStr.includes('(')) {
+        return [{
+            skill: 'Overall Experience',
+            years: expStr.toLowerCase().includes('year') ? expStr : `${expStr} Years`,
+            price: null
+        }];
+    }
+
+    const parts = expStr.split(/, |,/);
+    return parts.map(part => {
+        const lastParenIndex = part.lastIndexOf('(');
+        if (lastParenIndex !== -1 && part.endsWith(')')) {
+            const skill = part.substring(0, lastParenIndex).trim();
+            const detail = part.substring(lastParenIndex + 1, part.length - 1).trim();
+
+            // Check if detail is actually experience info (contains digits or "year")
+            const hasDigits = /\d/.test(detail);
+            const hasYear = detail.toLowerCase().includes('year');
+            const hasPrice = detail.includes('₹') || detail.includes('@');
+
+            if (hasDigits || hasYear || hasPrice) {
+                let years = detail;
+                let price = null;
+                if (detail.includes('@ ₹')) {
+                    const subParts = detail.split('@ ₹');
+                    years = subParts[0].trim() || 'N/A';
+                    price = subParts[1].trim();
+                } else if (detail.includes('@')) {
+                    const subParts = detail.split('@');
+                    years = subParts[0].trim() || 'N/A';
+                    price = subParts[1].trim();
+                }
+
+                if (years !== 'N/A' && !years.toLowerCase().includes('year') && /\d/.test(years)) {
+                    years += ' Years';
+                }
+                return { skill, years, price };
+            } else {
+                // If it's extra info like (Artist), include it in the skill name
+                return { skill: `${skill} (${detail})`, years: 'N/A', price: null };
+            }
+        }
+        return { skill: part.trim(), years: 'N/A', price: null };
+    });
+};
+
+const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return (
+        <span>
+            {parts.map((part, i) =>
+                part.toLowerCase() === query.toLowerCase()
+                    ? <strong key={i} className="text-blue-700 font-black">{part}</strong>
+                    : part
+            )}
+        </span>
+    );
+};
 
 const LocalHelpPage = () => {
     const { user: authUser, isLoggedIn, setShowAuthModal } = useAuth();
@@ -79,6 +79,8 @@ const LocalHelpPage = () => {
 
     const [workers, setWorkers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [allServices, setAllServices] = useState([]);
     const [selectedLocation, setSelectedLocation] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedService, setSelectedService] = useState('');
@@ -102,6 +104,22 @@ const LocalHelpPage = () => {
         service: "Pick the exact service you need from this list."
     };
 
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await api.get('/local-help/categories');
+                if (res.data.success) {
+                    setCategories(res.data.data);
+                    const services = [...new Set(res.data.data.flatMap(cat => cat.services))].sort();
+                    setAllServices(services);
+                }
+            } catch (err) {
+                console.error('Error fetching categories:', err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
     const fetchWorkers = useCallback(async (showLoading = false) => {
         if (showLoading) {
             setLoading(true);
@@ -117,7 +135,37 @@ const LocalHelpPage = () => {
 
             const res = await api.get('/local-help/professionals', { params });
             if (res.data.success) {
-                setWorkers(res.data.data);
+                let sortedData = [...res.data.data];
+
+                if (appliedSearchQuery) {
+                    const query = appliedSearchQuery.toLowerCase();
+                    sortedData.sort((a, b) => {
+                        // Priority 1: Exact match in services
+                        const aExactService = a.services?.some(s => s.toLowerCase() === query) || (a.service?.toLowerCase() === query);
+                        const bExactService = b.services?.some(s => s.toLowerCase() === query) || (b.service?.toLowerCase() === query);
+
+                        if (aExactService && !bExactService) return -1;
+                        if (!aExactService && bExactService) return 1;
+
+                        // Priority 2: Name starts with query
+                        const aNameStart = a.name?.toLowerCase().startsWith(query);
+                        const bNameStart = b.name?.toLowerCase().startsWith(query);
+
+                        if (aNameStart && !bNameStart) return -1;
+                        if (!aNameStart && bNameStart) return 1;
+
+                        // Priority 3: Skill contains query
+                        const aHasSkill = a.services?.some(s => s.toLowerCase().includes(query)) || a.service?.toLowerCase().includes(query) || a.experience?.toLowerCase().includes(query);
+                        const bHasSkill = b.services?.some(s => s.toLowerCase().includes(query)) || b.service?.toLowerCase().includes(query) || b.experience?.toLowerCase().includes(query);
+
+                        if (aHasSkill && !bHasSkill) return -1;
+                        if (!aHasSkill && bHasSkill) return 1;
+
+                        return 0;
+                    });
+                }
+
+                setWorkers(sortedData);
                 if (appliedSearchQuery) setHasSearched(true);
             }
         } catch (err) {
@@ -158,7 +206,7 @@ const LocalHelpPage = () => {
 
     useEffect(() => {
         if (searchQuery.length > 0) {
-            const filtered = ALL_SERVICES.filter(s =>
+            const filtered = allServices.filter(s =>
                 s.toLowerCase().includes(searchQuery.toLowerCase())
             ).slice(0, 8); // Limit to 8 suggestions
             setSuggestions(filtered);
@@ -167,7 +215,7 @@ const LocalHelpPage = () => {
             setSuggestions([]);
             setShowSuggestions(false);
         }
-    }, [searchQuery]);
+    }, [searchQuery, allServices]);
 
     const handleAddReview = async (workerId) => {
         const comment = newReview.workerId === workerId ? newReview.comment : '';
@@ -212,7 +260,7 @@ const LocalHelpPage = () => {
     };
 
     // Update derived services when category changes
-    const availableServices = CATEGORIES.find(c => c.name === selectedCategory)?.services || [];
+    const availableServices = categories.find(c => c.name === selectedCategory)?.services || [];
 
     // Removed redundant useEffect since the new one handles everything
 
@@ -351,125 +399,132 @@ const LocalHelpPage = () => {
                                     exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100 mt-2">
-                                        <div className="flex flex-col relative">
-                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Location</label>
-                                            <AnimatePresence>
-                                                {activeTooltip === 'location' && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
-                                                    >
-                                                        <Sparkles size={12} className="text-blue-100" />
-                                                        <span className="font-medium">{tooltips.location}</span>
-                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                            <select
-                                                value={selectedLocation}
-                                                onChange={(e) => setSelectedLocation(e.target.value)}
-                                                onFocus={() => setActiveTooltip('location')}
-                                                onBlur={() => setActiveTooltip(null)}
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
-                                            >
-                                                <option value="">All Locations</option>
-                                                {LOCATIONS.map(loc => (
-                                                    <option key={loc} value={loc.toLowerCase()}>{loc}</option>
-                                                ))}
-                                            </select>
+                                    <div className="pt-6 border-t border-slate-100 mt-2 space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {/* Location Filter */}
+                                            <div className="flex flex-col relative">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Location</label>
+                                                <AnimatePresence>
+                                                    {activeTooltip === 'location' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            className="absolute -top-12 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none whitespace-nowrap"
+                                                        >
+                                                            <Sparkles size={12} className="text-blue-100" />
+                                                            <span className="font-medium">{tooltips.location}</span>
+                                                            <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                                <select
+                                                    value={selectedLocation}
+                                                    onChange={(e) => setSelectedLocation(e.target.value)}
+                                                    onFocus={() => setActiveTooltip('location')}
+                                                    onBlur={() => setActiveTooltip(null)}
+                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                                >
+                                                    <option value="">All Locations</option>
+                                                    {LOCATIONS.map(loc => (
+                                                        <option key={loc} value={loc.toLowerCase()}>{loc}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Category Filter */}
+                                            <div className="flex flex-col relative">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Category</label>
+                                                <AnimatePresence>
+                                                    {activeTooltip === 'category' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            className="absolute -top-12 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none whitespace-nowrap"
+                                                        >
+                                                            <Sparkles size={12} className="text-blue-100" />
+                                                            <span className="font-medium">{tooltips.category}</span>
+                                                            <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                                <select
+                                                    value={selectedCategory}
+                                                    onChange={(e) => {
+                                                        setSelectedCategory(e.target.value);
+                                                        setSelectedService('');
+                                                    }}
+                                                    onFocus={() => setActiveTooltip('category')}
+                                                    onBlur={() => setActiveTooltip(null)}
+                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                                >
+                                                    <option value="">All Categories</option>
+                                                    {categories.map(cat => (
+                                                        <option key={cat.name} value={cat.name}>{cat.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Service Type Filter */}
+                                            <div className="flex flex-col relative">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Service Type</label>
+                                                <AnimatePresence>
+                                                    {activeTooltip === 'service' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                            className="absolute -top-12 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none whitespace-nowrap"
+                                                        >
+                                                            <Sparkles size={12} className="text-blue-100" />
+                                                            <span className="font-medium">{tooltips.service}</span>
+                                                            <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                                <select
+                                                    value={selectedService}
+                                                    onChange={(e) => setSelectedService(e.target.value)}
+                                                    disabled={!selectedCategory}
+                                                    onFocus={() => setActiveTooltip('service')}
+                                                    onBlur={() => setActiveTooltip(null)}
+                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">
+                                                        {selectedCategory ? `All ${selectedCategory}` : "First Select Category"}
+                                                    </option>
+                                                    {availableServices.map(svc => (
+                                                        <option key={svc} value={svc}>{svc}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
 
-                                        <div className="flex flex-col relative">
-                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Category</label>
-                                            <AnimatePresence>
-                                                {activeTooltip === 'category' && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
-                                                    >
-                                                        <Sparkles size={12} className="text-blue-100" />
-                                                        <span className="font-medium">{tooltips.category}</span>
-                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                            <select
-                                                value={selectedCategory}
-                                                onChange={(e) => {
-                                                    setSelectedCategory(e.target.value);
-                                                    setSelectedService('');
-                                                }}
-                                                onFocus={() => setActiveTooltip('category')}
-                                                onBlur={() => setActiveTooltip(null)}
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
-                                            >
-                                                <option value="">All Categories</option>
-                                                {CATEGORIES.map(cat => (
-                                                    <option key={cat.name} value={cat.name}>{cat.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="flex flex-col relative">
-                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Service Type</label>
-                                            <AnimatePresence>
-                                                {activeTooltip === 'service' && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                                                        className="absolute -top-10 left-0 bg-blue-600 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 z-20 pointer-events-none"
-                                                    >
-                                                        <Sparkles size={12} className="text-blue-100" />
-                                                        <span className="font-medium">{tooltips.service}</span>
-                                                        <div className="absolute -bottom-1 left-4 w-2.5 h-2.5 bg-blue-600 rotate-45"></div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                            <select
-                                                value={selectedService}
-                                                onChange={(e) => setSelectedService(e.target.value)}
-                                                disabled={!selectedCategory}
-                                                onFocus={() => setActiveTooltip('service')}
-                                                onBlur={() => setActiveTooltip(null)}
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="">{selectedCategory ? `All ${selectedCategory}` : "First Select Category"}</option>
-                                                {availableServices.map(svc => (
-                                                    <option key={svc} value={svc}>{svc}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Price Range Filter */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <div className="flex flex-col">
-                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Min Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={minPrice}
-                                                onChange={(e) => setMinPrice(e.target.value)}
-                                                placeholder="Min price"
-                                                min="0"
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Max Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={maxPrice}
-                                                onChange={(e) => setMaxPrice(e.target.value)}
-                                                placeholder="Max price"
-                                                min="0"
-                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
-                                            />
+                                        {/* Price Range Filter */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="flex flex-col">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Min Price (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    value={minPrice}
+                                                    onChange={(e) => setMinPrice(e.target.value)}
+                                                    placeholder="Min price"
+                                                    min="0"
+                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Max Price (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    value={maxPrice}
+                                                    onChange={(e) => setMaxPrice(e.target.value)}
+                                                    placeholder="Max price"
+                                                    min="0"
+                                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium text-slate-700"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -523,137 +578,244 @@ const LocalHelpPage = () => {
                             </div>
 
                             {workers.map(worker => (
-                                <div key={worker._id} className="bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex flex-col sm:flex-row gap-5">
-                                        {/* Avatar & Basic Info */}
-                                        <div className="flex flex-row sm:flex-col items-center sm:w-32 shrink-0 gap-4 sm:gap-2">
-                                            <div className="w-14 h-14 sm:w-24 sm:h-24 bg-blue-100 rounded-2xl sm:rounded-full flex items-center justify-center text-blue-600 shadow-inner shrink-0">
-                                                <User size={28} className="sm:w-10 sm:h-10" />
+                                <div key={worker._id} className="bg-white rounded-2xl p-3 md:p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300">
+                                    <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+
+                                        {/* HEADER ROW: Avatar + Name (Utilizes space next to icon) */}
+                                        <div className="flex flex-row md:flex-col gap-3 md:gap-4 items-start md:items-center md:w-32 shrink-0">
+                                            {/* Avatar */}
+                                            <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-blue-600 shadow-inner shrink-0">
+                                                <User size={30} className="md:size-12" />
                                             </div>
-                                            <div className="flex flex-col sm:items-center gap-1">
-                                                <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-xs font-bold border border-blue-100">
-                                                    <ShieldCheck size={14} className="fill-current" /> Verified
+
+                                            {/* Name & Basic Info - NEXT TO ICON on Mobile, BELOW on Laptop */}
+                                            <div className="flex-1 md:hidden">
+                                                <div className="flex items-center gap-2 mb-1.5 pt-1">
+                                                    <h4 className="text-xl font-bold text-slate-900 leading-tight">
+                                                        {highlightText(worker.name, appliedSearchQuery)}
+                                                    </h4>
+                                                    <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-[10px] font-bold border border-blue-100 uppercase">
+                                                        <ShieldCheck size={12} className="fill-current" /> Verified
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div className="flex items-center gap-2 text-xs font-medium text-slate-600 line-clamp-1">
+                                                        <Briefcase size={12} className="text-slate-400" />
+                                                        {(() => {
+                                                            let services = worker.services && worker.services.length > 0 ? [...worker.services] : [worker.service];
+                                                            return services.join(', ');
+                                                        })()}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                                                        <MapPin size={12} className="text-slate-400" />
+                                                        {(worker.locations || [worker.location])[0]}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Content */}
-                                        <div className="flex-1">
-                                            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
-                                                <div>
-                                                    <h4 className="text-xl font-bold text-slate-900 mb-1">{worker.name}</h4>
-                                                    <div className="flex flex-wrap gap-2 text-sm text-slate-600 mb-2">
-                                                        <span className="flex items-center gap-1">
-                                                            <Briefcase size={14} className="text-slate-400" />
-                                                            {worker.service}
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <MapPin size={14} className="text-slate-400" />
-                                                            {worker.location}
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <Clock size={14} className="text-slate-400" />
-                                                            {worker.experience} Exp.
-                                                        </span>
+                                        {/* MAIN CONTENT: Stats & Pricing (Full width below header on mobile) */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Desktop Header */}
+                                            <div className="hidden md:block mb-5">
+                                                <div className="flex flex-wrap items-center gap-3 mb-3">
+                                                    <h4 className="text-2xl font-bold text-slate-900 leading-tight">
+                                                        {highlightText(worker.name, appliedSearchQuery)}
+                                                    </h4>
+                                                    <div className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold border border-blue-100 uppercase tracking-wider">
+                                                        <ShieldCheck size={14} className="fill-current" /> Verified Professional
                                                     </div>
+                                                </div>
 
-                                                    {/* Price Range Section - Prominent Display */}
-                                                    {worker.priceRange && (worker.priceRange.minPrice > 0 || worker.priceRange.maxPrice > 0) && (
-                                                        <div className="mt-3 mb-3 inline-flex items-center gap-2 md:gap-3 bg-white border border-slate-200 rounded-xl px-3 py-2 md:px-4 md:py-2.5 shadow-sm">
-                                                            <div className="bg-green-50 p-1.5 md:p-2 rounded-lg border border-green-100">
-                                                                <span className="text-green-600 font-bold text-base md:text-lg leading-none">₹</span>
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] md:text-[11px] text-slate-400 font-bold uppercase tracking-wider">Service Range</span>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="text-slate-900 font-black text-sm md:text-base">
-                                                                        ₹{worker.priceRange.minPrice.toLocaleString()}
-                                                                    </span>
-                                                                    <span className="text-slate-300 font-bold">-</span>
-                                                                    {worker.priceRange.maxPrice > 0 ? (
-                                                                        <span className="text-slate-900 font-black text-sm md:text-base">
-                                                                            ₹{worker.priceRange.maxPrice.toLocaleString()}
+                                                <div className="flex flex-wrap gap-5 text-sm text-slate-600">
+                                                    <span className="flex items-center gap-2 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                                        <Briefcase size={18} className="text-slate-400" />
+                                                        {(() => {
+                                                            let services = worker.services && worker.services.length > 0 ? [...worker.services] : [worker.service];
+                                                            return highlightText(services.join(', '), appliedSearchQuery);
+                                                        })()}
+                                                    </span>
+                                                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                                        <MapPin size={18} className="text-slate-400" />
+                                                        <div className="flex items-center gap-2">
+                                                            {(() => {
+                                                                const locs = worker.locations || [worker.location];
+                                                                const primaryLoc = locs[0];
+                                                                return <span className="font-semibold text-slate-900">{primaryLoc}</span>;
+                                                            })()}
+                                                        </div>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Better Experience Display */}
+                                            <div className="mt-3 md:mt-5 mb-3 md:mb-5">
+                                                <div className="flex items-center gap-2 mb-2 md:mb-3">
+                                                    <div className="w-0.5 h-3 md:w-1 md:h-4 bg-blue-600 rounded-full"></div>
+                                                    <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experience</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3">
+                                                    {(() => {
+                                                        let exps = parseExperience(worker.experience);
+                                                        // Show all experience entries from the string
+
+                                                        if (appliedSearchQuery) {
+                                                            const query = appliedSearchQuery.toLowerCase();
+                                                            exps.sort((a, b) => {
+                                                                const aMatch = a.skill.toLowerCase().includes(query);
+                                                                const bMatch = b.skill.toLowerCase().includes(query);
+                                                                if (aMatch && !bMatch) return -1;
+                                                                if (!aMatch && bMatch) return 1;
+                                                                return 0;
+                                                            });
+                                                        }
+                                                        return exps.map((exp, i) => (
+                                                            <div key={i} className={`flex flex-col min-w-0 p-2.5 md:p-3 border rounded-xl hover:border-blue-100 hover:bg-white transition-all group ${appliedSearchQuery && exp.skill.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}>
+                                                                <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-tight mb-1 md:mb-1.5 transition-colors line-clamp-1 ${appliedSearchQuery && exp.skill.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ? 'text-blue-700' : 'text-slate-400 group-hover:text-blue-500'}`}>
+                                                                    {highlightText(exp.skill, appliedSearchQuery)}
+                                                                </span>
+                                                                <div className="flex items-center gap-1.5 md:gap-2">
+                                                                    {exp.years !== 'N/A' && (
+                                                                        <>
+                                                                            <Clock size={10} className={`md:size-3 ${appliedSearchQuery && exp.skill.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ? "text-blue-400" : "text-slate-300 group-hover:text-blue-400"}`} />
+                                                                            <span className={`text-xs md:text-sm font-bold tracking-tight ${appliedSearchQuery && exp.skill.toLowerCase().includes(appliedSearchQuery.toLowerCase()) ? 'text-blue-900' : 'text-slate-800'}`}>
+                                                                                {exp.years}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                    {exp.price && (
+                                                                        <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-0.5">
+                                                                            ₹{exp.price}
                                                                         </span>
-                                                                    ) : (
-                                                                        <span className="text-slate-500 font-bold text-xs md:text-sm italic">
-                                                                            Depends upon work
-                                                                        </span>
+                                                                    )}
+                                                                    {exp.years === 'N/A' && !exp.price && (
+                                                                        <span className="text-[10px] font-medium text-slate-400">Professional</span>
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                    {worker.description && (
-                                                        <p className="text-sm text-slate-500 mt-3 line-clamp-2 italic">
-                                                            "{worker.description}"
-                                                        </p>
-                                                    )}
+                                                        ));
+                                                    })()}
                                                 </div>
-
-                                                <a
-                                                    href={`tel:${worker.number}`}
-                                                    className="w-full md:w-auto py-3 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all no-underline"
-                                                >
-                                                    <Phone size={18} />
-                                                    Call Now
-                                                </a>
                                             </div>
 
-                                            {/* Review Section */}
-                                            <div className="mt-4 pt-4 border-t border-slate-100">
-                                                {submittedReviews[worker._id] ? (
-                                                    <div className="bg-green-50 border border-green-100 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
-                                                        <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-200">
-                                                            <Sparkles size={18} />
+                                            {/* Price Range Section - Prominent Display */}
+                                            {(worker.priceRange && (worker.priceRange.minPrice > 0 || worker.priceRange.maxPrice > 0)) && (() => {
+                                                const matchedExp = appliedSearchQuery ? parseExperience(worker.experience).find(e => e.skill.toLowerCase().includes(appliedSearchQuery.toLowerCase())) : null;
+                                                const hasMatch = !!(matchedExp && matchedExp.price);
+                                                const displayPrice = hasMatch ? matchedExp.price : worker.priceRange.minPrice;
+
+                                                return (
+                                                    <div className={`mt-3 mb-3 inline-flex items-center gap-2 md:gap-3 border rounded-xl px-3 py-2 md:px-4 md:py-2.5 shadow-sm transition-all ${hasMatch ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
+                                                        <div className={`${hasMatch ? 'bg-blue-600' : 'bg-green-50'} p-1.5 md:p-2 rounded-lg border ${hasMatch ? 'border-blue-400' : 'border-green-100'}`}>
+                                                            <span className={`${hasMatch ? 'text-white' : 'text-green-600'} font-bold text-base md:text-lg leading-none`}>₹</span>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-green-700 font-black text-sm uppercase tracking-tight">Thank you for your review</p>
-                                                            <p className="text-green-600 text-xs font-bold">Submitted successfully.</p>
+                                                        <div className="flex flex-col">
+                                                            <span className={`text-[10px] md:text-[11px] font-bold uppercase tracking-wider ${hasMatch ? 'text-blue-600' : 'text-slate-400'}`}>
+                                                                {hasMatch ? `Price for ${matchedExp.skill}` : 'Service Range'}
+                                                            </span>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={`font-bold text-sm md:text-base ${hasMatch ? 'text-blue-900' : 'text-slate-900'}`}>
+                                                                    ₹{Number(displayPrice).toLocaleString()}
+                                                                </span>
+                                                                {!hasMatch && (
+                                                                    <>
+                                                                        <span className="text-slate-300 font-bold">-</span>
+                                                                        {worker.priceRange.maxPrice > 0 ? (
+                                                                            <span className="text-slate-900 font-bold text-sm md:text-base">
+                                                                                ₹{worker.priceRange.maxPrice.toLocaleString()}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-slate-500 font-bold text-xs md:text-sm italic">
+                                                                                Depends upon work
+                                                                            </span>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                                {hasMatch && (
+                                                                    <span className="text-blue-500/60 font-bold text-[10px] md:text-xs">
+                                                                        • Minimum Payout
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <>
-                                                        <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                            <Sparkles size={14} className="text-blue-500" />
-                                                            Experience Quality? Rate This Professional
-                                                        </h5>
-
-                                                        {/* Simple Review Input */}
-                                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                                            <div className="flex-1 relative">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Write a review..."
-                                                                    value={newReview.workerId === worker._id ? newReview.comment : ''}
-                                                                    onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
-                                                                    className="w-full pl-3 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                                />
-                                                                <button
-                                                                    onClick={() => handleAddReview(worker._id)}
-                                                                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                                                                >
-                                                                    <Send size={16} />
-                                                                </button>
-                                                            </div>
-                                                            <div className="flex justify-center sm:justify-start gap-1 p-1 bg-slate-50 rounded-lg border border-slate-100">
-                                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                                    <button
-                                                                        key={star}
-                                                                        onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
-                                                                        className="p-1.5 hover:bg-white hover:shadow-sm rounded transition-all"
-                                                                    >
-                                                                        <Star
-                                                                            size={18}
-                                                                            className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-400 fill-current" : "text-slate-300"}
-                                                                        />
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
+                                                );
+                                            })()}
+                                            {worker.description && (
+                                                <p className="text-sm text-slate-500 mt-3 line-clamp-2 italic">
+                                                    "{worker.description}"
+                                                </p>
+                                            )}
                                         </div>
+
+                                        {/* CALL BUTTON - Bottom on Mobile, Right on Desktop */}
+                                        <div className="flex flex-col justify-end shrink-0">
+                                            <a
+                                                href={`tel:${worker.number}`}
+                                                className="w-full md:w-auto h-auto md:h-14 py-3.5 px-8 bg-green-600 hover:bg-green-700 text-white rounded-xl md:rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-green-100 hover:shadow-green-200 transition-all hover:scale-[1.02] active:scale-95 no-underline"
+                                            >
+                                                <div className="bg-green-500/30 p-1.5 rounded-lg">
+                                                    <Phone size={18} className="md:size-5" />
+                                                </div>
+                                                <span className="text-base md:text-lg">Call Now</span>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Review Section */}
+                                    <div className="mt-4 pt-4 border-t border-slate-100">
+                                        {submittedReviews[worker._id] ? (
+                                            <div className="bg-green-50 border border-green-100 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+                                                <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-200">
+                                                    <Sparkles size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-green-700 font-black text-sm uppercase tracking-tight">Thank you for your review</p>
+                                                    <p className="text-green-600 text-xs font-bold">Submitted successfully.</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                    <Sparkles size={14} className="text-blue-500" />
+                                                    Experience Quality? Rate This Professional
+                                                </h5>
+
+                                                {/* Simple Review Input */}
+                                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Write a review..."
+                                                            value={newReview.workerId === worker._id ? newReview.comment : ''}
+                                                            onChange={(e) => setNewReview({ ...newReview, workerId: worker._id, comment: e.target.value })}
+                                                            className="w-full pl-3 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleAddReview(worker._id)}
+                                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                                        >
+                                                            <Send size={16} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex justify-center sm:justify-start gap-1 p-1 bg-slate-50 rounded-lg border border-slate-100">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                onClick={() => setNewReview({ ...newReview, workerId: worker._id, rating: star })}
+                                                                className="p-1.5 hover:bg-white hover:shadow-sm rounded transition-all"
+                                                            >
+                                                                <Star
+                                                                    size={18}
+                                                                    className={(newReview.workerId === worker._id ? newReview.rating : 5) >= star ? "text-amber-400 fill-current" : "text-slate-300"}
+                                                                />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -686,7 +848,7 @@ const LocalHelpPage = () => {
                 isOpen={loading}
                 message="Checking availability..."
             />
-        </div >
+        </div>
     );
 };
 

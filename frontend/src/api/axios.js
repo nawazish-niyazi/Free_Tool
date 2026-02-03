@@ -10,9 +10,7 @@ const getBaseURL = () => {
     // If the browser is NOT on localhost/127.0.0.1, but the API URL is set to localhost
     // then we should automatically swap it to the current hostname.
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-        if (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
-            return `${protocol}//${hostname}:5000/api`;
-        }
+        return `${protocol}//${hostname}:5000/api`;
     }
 
     return envUrl || 'http://localhost:5000/api';

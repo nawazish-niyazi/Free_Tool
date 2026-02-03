@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ToolCard from '../components/ToolCard';
-import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets, Eraser, Building2, Sparkles, Search, QrCode } from 'lucide-react';
+import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets, Eraser, Building2, Sparkles, Search, QrCode, Landmark, Calendar } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,11 +31,32 @@ const Home = () => {
      */
     const tools = [
         {
+            title: 'Local Help',
+            description: 'Find local plumbers, electricians, and other professionals nearby.',
+            icon: Search,
+            to: '/local-help',
+            color: 'bg-cyan-100 hover:bg-cyan-200'
+        },
+        {
+            title: 'Financial Aids',
+            description: 'Find LALA, NBFC, and Banking assistance near you.',
+            icon: Landmark,
+            to: '/financial-aid',
+            color: 'bg-rose-100 hover:bg-rose-200'
+        },
+        {
             title: 'Invoice Generator',
             description: 'Create professional PDF invoices with custom branding.',
             icon: Building2,
             to: '/invoice-generator',
             color: 'bg-slate-200 hover:bg-slate-300 border-2 border-slate-900/5'
+        },
+        {
+            title: 'Events Near You',
+            description: 'Discover upcoming local events and happenings.',
+            icon: Calendar,
+            to: '/events',
+            color: 'bg-orange-100 hover:bg-orange-200'
         },
         {
             title: 'QR Code Generator',
@@ -58,14 +79,7 @@ const Home = () => {
             to: '/image-tools',
             color: 'bg-emerald-100 hover:bg-emerald-200'
         },
-        {
-            title: 'Local Help',
-            description: 'Find local plumbers, electricians, and other professionals nearby.',
-            icon: Search,
-            to: '/local-help',
-            color: 'bg-cyan-100 hover:bg-cyan-200'
-        },
-    ].filter(tool => tool.to !== '/local-help' || user);
+    ]
 
     return (
         <div className="min-h-screen bg-white">
@@ -73,8 +87,8 @@ const Home = () => {
             <Navbar />
 
             {/* Hero Section: The big welcome text at the top (Restored to original centered style) */}
-            <div className="relative isolate px-4 sm:px-6 pt-10 sm:pt-14 lg:px-8">
-                <div className="mx-auto max-w-4xl py-8 sm:py-20 lg:py-28 text-center">
+            <div className="relative isolate px-4 sm:px-6 pt-10 sm:pt-12 lg:px-8">
+                <div className="mx-auto max-w-4xl py-8 sm:py-20 lg:pt-14 lg:pb-24 text-center">
                     <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6">
                         One-Stop <span className="text-blue-600">Solution</span>
                     </h1>

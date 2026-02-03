@@ -33,21 +33,21 @@ const ImageTools = () => {
             description: 'Change dimensions and reduce file size while maintaining quality.',
             icon: Maximize,
             to: '/image-tools?mode=editor',
-            color: 'bg-blue-50/50 hover:bg-blue-50'
+            color: 'bg-blue-100 hover:bg-blue-200 border-2 border-blue-900/5'
         },
         {
             title: 'Background Removal',
             description: 'Automatically remove image backgrounds using AI.',
             icon: Sparkles,
             to: '/background-removal',
-            color: 'bg-cyan-50/50 hover:bg-cyan-50'
+            color: 'bg-cyan-100 hover:bg-cyan-200 border-2 border-cyan-900/5'
         },
         {
             title: 'Image Converter',
             description: 'Convert between JPG, PNG, and WebP formats instantly.',
             icon: RefreshCw,
             to: '/image-tools?mode=editor',
-            color: 'bg-emerald-50/50 hover:bg-emerald-50'
+            color: 'bg-emerald-100 hover:bg-emerald-200 border-2 border-emerald-900/5'
         }
     ];
 

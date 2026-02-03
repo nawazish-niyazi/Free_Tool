@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard, Users, Briefcase, FileText,
     Activity, LogOut, ChevronRight, TrendingUp,
-    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle, Gift, Ticket, Plus, Image, Upload
+    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle, Gift, Ticket, Plus, Image, Upload, Landmark
 } from 'lucide-react';
 import api from '../api/axios';
 import {
@@ -36,6 +36,44 @@ ChartJS.register(
     Filler
 );
 
+const parseExperience = (expStr) => {
+    if (!expStr) return [];
+
+    // Fallback for old simple strings
+    if (!expStr.includes('(')) {
+        return [{
+            skill: 'Overall Experience',
+            years: expStr.toLowerCase().includes('year') ? expStr : `${expStr} Years`,
+            price: null
+        }];
+    }
+
+    const parts = expStr.split(', ');
+    return parts.map(part => {
+        const match = part.match(/^(.*)\s*\(([^)]+)\)$/);
+        if (match) {
+            const skill = match[1].trim();
+            const detail = match[2].trim();
+            let years = 'N/A';
+            let price = null;
+
+            if (detail.includes('@ ₹')) {
+                const subParts = detail.split('@ ₹');
+                years = subParts[0].trim() || 'N/A';
+                price = subParts[1].trim();
+            } else {
+                years = detail;
+            }
+
+            if (years !== 'N/A' && !years.toLowerCase().includes('year')) {
+                years += ' Years';
+            }
+            return { skill, years, price };
+        }
+        return { skill: part.trim(), years: 'N/A', price: null };
+    });
+};
+
 const AdminDashboard = () => {
     const { admin, adminToken, adminLogout } = useAdmin();
     const [stats, setStats] = useState(null);
@@ -65,6 +103,26 @@ const AdminDashboard = () => {
         keyPoints: '',
         imagePreview: null
     });
+
+    const [helpFormData, setHelpFormData] = useState({ name: '', services: '' });
+    const [editingHelpId, setEditingHelpId] = useState(null);
+    const [isManagingHelp, setIsManagingHelp] = useState(false);
+    const [isManagingSkills, setIsManagingSkills] = useState(false);
+    const [pendingSkillsList, setPendingSkillsList] = useState([]);
+
+    // New state for Financial Aids & Events
+    const [isManagingEvent, setIsManagingEvent] = useState(false);
+    const [eventFormData, setEventFormData] = useState({
+        title: '',
+        description: '',
+        image: '',
+        date: '',
+        location: '',
+        organizer: '',
+        link: '',
+        imageFile: null
+    });
+    const [editingEventId, setEditingEventId] = useState(null);
 
     const [lastSeenCounts, setLastSeenCounts] = useState(() => {
         const saved = localStorage.getItem('adminLastSeenCounts');
@@ -170,7 +228,9 @@ const AdminDashboard = () => {
                 'professionals': 'admin/professionals',
                 'invoices': 'admin/invoices',
                 'logs': 'admin/logs',
-                'worker-requests': 'admin/pending-workers',
+                'local-help': 'admin/local-help/categories',
+                'financial-aid': 'admin/financial-aid',
+                'events': 'admin/events',
                 'coupons': 'admin/rewards/coupons',
                 'referrals': 'admin/rewards/referrals'
             };
@@ -209,14 +269,49 @@ const AdminDashboard = () => {
     const fetchPendingWorkers = async () => {
         try {
             const res = await api.get('/admin/pending-workers');
-
             if (res.data.success) {
-                setPendingWorkersCount(res.data.count);
+                setPendingWorkersCount(res.data.data.length);
             }
         } catch (err) {
-            console.error('Fetch pending workers error:', err);
+            console.error('Pending count error:', err);
         }
     };
+
+    const fetchPendingSkills = async () => {
+        try {
+            const res = await api.get('/admin/pending-skills');
+            if (res.data.success) {
+                setPendingSkillsList(res.data.data);
+            }
+        } catch (err) {
+            console.error('Fetch pending skills error:', err);
+        }
+    };
+
+    const handleApproveSkill = async (proId, skill) => {
+        try {
+            const res = await api.put(`/admin/professionals/${proId}/approve-skill`, { skill });
+            if (res.data.success) {
+                fetchPendingSkills();
+                if (activeTab === 'professionals') fetchListData();
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Approval failed');
+        }
+    };
+
+    const handleRejectSkill = async (proId, skill) => {
+        if (!window.confirm('Are you sure you want to reject this skill suggestion?')) return;
+        try {
+            const res = await api.put(`/admin/professionals/${proId}/reject-skill`, { skill });
+            if (res.data.success) {
+                fetchPendingSkills();
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Rejection failed');
+        }
+    };
+
 
     const handleCreateCoupon = async (e) => {
         e.preventDefault();
@@ -286,14 +381,122 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleCategoryAction = async (e) => {
+        e.preventDefault();
+        try {
+            const data = {
+                name: helpFormData.name,
+                services: helpFormData.services.split(',').map(s => s.trim()).filter(s => s !== '')
+            };
+            if (editingHelpId) {
+                await api.put(`/admin/local-help/categories/${editingHelpId}`, data);
+            } else {
+                await api.post('/admin/local-help/categories', data);
+            }
+            setIsManagingHelp(false);
+            setHelpFormData({ name: '', services: '' });
+            setEditingHelpId(null);
+            fetchListData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Action failed');
+        }
+    };
+
+    // Financial Aid Actions
+    const handleAidStatus = async (id, isApproved) => {
+        try {
+            await api.put(`/admin/financial-aid/${id}/status`, { isApproved });
+            fetchListData();
+        } catch (err) {
+            alert('Status update failed');
+        }
+    };
+
+    const handleDeleteAid = async (id) => {
+        if (!window.confirm('Delete this provider?')) return;
+        try {
+            await api.delete(`/admin/financial-aid/${id}`);
+            fetchListData();
+        } catch (err) {
+            alert('Delete failed');
+        }
+    };
+
+    // Event Actions
+    const handleEventAction = async (e) => {
+        e.preventDefault();
+        try {
+            let finalImageUrl = eventFormData.image;
+            if (eventFormData.imageFile) {
+                const formData = new FormData();
+                formData.append('image', eventFormData.imageFile);
+                const uploadRes = await api.post('/image/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (uploadRes.data.success) {
+                    finalImageUrl = `${import.meta.env.VITE_API_URL.replace('/api', '')}/temp/${uploadRes.data.filename}`;
+                }
+            }
+
+            const data = { ...eventFormData, image: finalImageUrl };
+            delete data.imageFile;
+
+            if (editingEventId) {
+                await api.put(`/admin/events/${editingEventId}`, data);
+            } else {
+                await api.post('/admin/events', data);
+            }
+
+            setIsManagingEvent(false);
+            setEventFormData({ title: '', description: '', image: '', date: '', location: '', organizer: '', link: '', imageFile: null });
+            setEditingEventId(null);
+            fetchListData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Action failed');
+        }
+    };
+
+    const handleDeleteEvent = async (id) => {
+        if (!window.confirm('Delete this event?')) return;
+        try {
+            await api.delete(`/admin/events/${id}`);
+            fetchListData();
+        } catch (err) {
+            alert('Delete failed');
+        }
+    };
+
+    const handleDeleteCategory = async (id) => {
+        if (!window.confirm('Delete this category?')) return;
+        try {
+            await api.delete(`/admin/local-help/categories/${id}`);
+            fetchListData();
+        } catch (err) {
+            alert('Delete failed');
+        }
+    };
+
     const filteredData = dataList.filter(item => {
         const search = searchTerm.toLowerCase();
         if (activeTab === 'users') return item.name?.toLowerCase().includes(search) || item.phone?.includes(search) || item.email?.toLowerCase().includes(search);
-        if (activeTab === 'professionals') return item.name?.toLowerCase().includes(search) || item.category?.toLowerCase().includes(search) || item.service?.toLowerCase().includes(search);
-        if (activeTab === 'invoices') return item.invoiceNumber?.toLowerCase().includes(search) || item.clientName?.toLowerCase().includes(search);
+        if (activeTab === 'professionals') {
+            const inName = item.name?.toLowerCase().includes(search);
+            const inCategory = item.category?.toLowerCase().includes(search);
+            const inService = item.service?.toLowerCase().includes(search);
+            const inServicesList = item.services?.some(s => s.toLowerCase().includes(search));
+            return inName || inCategory || inService || inServicesList;
+        }
+        if (activeTab === 'local-help') {
+            const inName = item.name?.toLowerCase().includes(search);
+            const inServices = item.services?.some(s => s.toLowerCase().includes(search));
+            return inName || inServices;
+        }
+        if (activeTab === 'invoices') return (item.invoiceNumber || '').toLowerCase().includes(search) || (item.client?.name || '').toLowerCase().includes(search);
         if (activeTab === 'logs') return item.tool?.toLowerCase().includes(search) || item.month?.toLowerCase().includes(search);
         if (activeTab === 'coupons') return item.title?.toLowerCase().includes(search) || item.code?.toLowerCase().includes(search);
         if (activeTab === 'referrals') return item.name?.toLowerCase().includes(search) || item.service?.toLowerCase().includes(search);
+        if (activeTab === 'financial-aid') return item.name?.toLowerCase().includes(search) || item.type?.toLowerCase().includes(search) || item.location?.toLowerCase().includes(search);
+        if (activeTab === 'events') return item.title?.toLowerCase().includes(search) || item.location?.toLowerCase().includes(search);
         return true;
     });
 
@@ -314,7 +517,9 @@ const AdminDashboard = () => {
                         { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
                         { id: 'users', label: 'Users', icon: Users, badge: stats?.newUsers },
                         { id: 'professionals', label: 'Professional Users', icon: Briefcase },
-                        { id: 'worker-requests', label: 'Worker Requests', icon: UserPlus, badge: pendingWorkersCount },
+                        { id: 'local-help', label: 'Local Help', icon: Activity },
+                        { id: 'financial-aid', label: 'Financial Aids', icon: Landmark },
+                        { id: 'events', label: 'Local Events', icon: Calendar },
                         { id: 'invoices', label: 'Invoices', icon: FileText },
                         { id: 'coupons', label: 'Rewards/Coupons', icon: Ticket },
                         { id: 'referrals', label: 'Referrals', icon: Gift, badge: stats?.pendingReferrals },
@@ -443,6 +648,41 @@ const AdminDashboard = () => {
                                         className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 whitespace-nowrap"
                                     >
                                         <Plus size={18} strokeWidth={3} /> Add Coupons
+                                    </button>
+                                )}
+                                {activeTab === 'local-help' && (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                fetchPendingSkills();
+                                                setIsManagingSkills(true);
+                                            }}
+                                            className="px-6 py-3 bg-white text-blue-600 border border-blue-200 rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-blue-50 hover:bg-blue-50 hover:-translate-y-1 transition-all active:scale-95 whitespace-nowrap"
+                                        >
+                                            <Sparkles size={18} className="text-blue-500" /> Skill Suggestions
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setEditingHelpId(null);
+                                                setHelpFormData({ name: '', services: '' });
+                                                setIsManagingHelp(true);
+                                            }}
+                                            className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 whitespace-nowrap"
+                                        >
+                                            <Plus size={18} strokeWidth={3} /> Add Category
+                                        </button>
+                                    </div>
+                                )}
+                                {activeTab === 'events' && (
+                                    <button
+                                        onClick={() => {
+                                            setEditingEventId(null);
+                                            setEventFormData({ title: '', description: '', image: '', date: '', location: '', organizer: '', link: '', imageFile: null });
+                                            setIsManagingEvent(true);
+                                        }}
+                                        className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 whitespace-nowrap"
+                                    >
+                                        <Plus size={18} strokeWidth={3} /> Add Event
                                     </button>
                                 )}
                             </div>
@@ -801,9 +1041,11 @@ const AdminDashboard = () => {
                                             {activeTab === 'users' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">User Details</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Joined On</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                             {activeTab === 'professionals' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Professional</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Expertise</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Location</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Social Score</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                             {activeTab === 'invoices' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Invoice Ref</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Issued To</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Amount</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th></>)}
-                                            {activeTab === 'worker-requests' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Worker Details</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Service</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Location</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Experience</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
+                                            {activeTab === 'local-help' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Category Name</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Service Types</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Growth</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                             {activeTab === 'coupons' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Coupon</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Code</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                             {activeTab === 'referrals' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Referral</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Referrer</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Number</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Area</th></>)}
+                                            {activeTab === 'financial-aid' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Provider</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
+                                            {activeTab === 'events' && (<><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Event</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Location</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Organizer</th><th className="p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th></>)}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -844,16 +1086,61 @@ const AdminDashboard = () => {
                                                             </div>
                                                         </button>
                                                     </td>
-                                                    <td className="p-6"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest mr-2">{item.category}</span><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest">{item.service}</span></td>
-                                                    <td className="p-6 text-sm font-bold text-slate-600 capitalize">{item.location}</td>
                                                     <td className="p-6">
-                                                        <button
-                                                            onClick={() => setSelectedProfessional(item)}
-                                                            className="flex items-center gap-1 text-amber-500 font-black hover:scale-110 transition-transform"
-                                                        >
-                                                            <Star size={14} className="fill-current" /> {item.rating}
-                                                        </button>
-                                                        <p className="text-[9px] text-slate-400 font-black uppercase mt-1">{item.experience} Exp</p>
+                                                        <div className="flex flex-col gap-3">
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {parseExperience(item.experience).map((exp, i) => (
+                                                                    <div key={i} className="flex flex-col px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl">
+                                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">{exp.skill}</span>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-xs font-black text-blue-600 leading-none">{exp.years}</span>
+                                                                            {exp.price && (
+                                                                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                                                                                    ₹{exp.price}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {item.pendingServices?.length > 0 && (
+                                                                    <div className="flex flex-col px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                                                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                                                            <Activity size={10} className="text-amber-500" />
+                                                                            <span className="text-[8px] font-black text-amber-600 uppercase tracking-tight">Pending Approval</span>
+                                                                        </div>
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {item.pendingServices.map((ps, i) => (
+                                                                                <span key={i} className="text-[10px] font-bold text-amber-800 bg-white/50 px-1.5 rounded-md border border-amber-100 italic">
+                                                                                    {ps}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-6">
+                                                        <div className="flex flex-col gap-1">
+                                                            {(() => {
+                                                                const locs = item.locations || (item.location ? [item.location] : []);
+                                                                if (locs.length === 0) return <span className="text-slate-300 italic text-xs">Not Set</span>;
+                                                                return locs.map((loc, i) => (
+                                                                    <span key={i} className="text-sm font-bold text-slate-600 capitalize">{loc}</span>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-6">
+                                                        <div className="flex flex-col items-start gap-1">
+                                                            <button
+                                                                onClick={() => setSelectedProfessional(item)}
+                                                                className="flex items-center gap-1 text-amber-500 font-black hover:scale-110 transition-transform"
+                                                            >
+                                                                <Star size={14} className="fill-current" /> {item.rating || '0.0'}
+                                                            </button>
+                                                            <p className="text-[9px] text-slate-400 font-black uppercase">Social Score</p>
+                                                        </div>
                                                     </td>
                                                     <td className="p-6">
                                                         <button
@@ -879,12 +1166,43 @@ const AdminDashboard = () => {
                                                     <td className="p-6 font-black text-slate-900 text-sm">₹{item.totals?.grandTotal}</td>
                                                     <td className="p-6"><span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Generated</span></td>
                                                 </>)}
-                                                {activeTab === 'worker-requests' && (<>
-                                                    <td className="p-6"><div className="flex items-center gap-4"><div className="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center font-black">{item.name?.charAt(0)}</div><div><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.number}</p></div></div></td>
-                                                    <td className="p-6"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest mr-2">{item.category}</span><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest">{item.service}</span></td>
-                                                    <td className="p-6 text-sm font-bold text-slate-600 capitalize">{item.location}</td>
-                                                    <td className="p-6 text-sm font-bold text-slate-600">{item.experience}</td>
-                                                    <td className="p-6"><div className="flex gap-2"><button onClick={() => handleWorkerStatus(item._id, 'approved')} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve"><CheckCircle size={20} /></button><button onClick={() => handleWorkerStatus(item._id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject"><XCircle size={20} /></button></div></td>
+                                                {activeTab === 'local-help' && (<>
+                                                    <td className="p-6"><div className="flex items-center gap-4"><div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-black">{item.name?.charAt(0)}</div><div><p className="font-bold text-slate-900">{item.name}</p></div></div></td>
+                                                    <td className="p-6">
+                                                        <div className="flex flex-wrap gap-1.5 max-w-sm">
+                                                            {item.services?.map((s, i) => (
+                                                                <span key={i} className="px-2.5 py-1 bg-slate-100 text-[10px] font-bold text-slate-700 rounded-lg border border-slate-200">
+                                                                    {s}
+                                                                </span>
+                                                            ))}
+                                                            {(!item.services || item.services.length === 0) && (
+                                                                <span className="text-slate-300 italic text-xs">No Services Listed</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600 capitalize">Dynamic</td>
+                                                    <td className="p-6">
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingHelpId(item._id);
+                                                                    setHelpFormData({ name: item.name, services: item.services.join(', ') });
+                                                                    setIsManagingHelp(true);
+                                                                }}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit3 size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteCategory(item._id)}
+                                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                 </>)}
                                                 {activeTab === 'coupons' && (<>
                                                     <td className="p-6"><div className="flex items-center gap-4"><div className="w-12 h-8 bg-slate-100 rounded-lg overflow-hidden border border-slate-200"><img src={item.image} className="w-full h-full object-cover" /></div><div><p className="font-bold text-slate-900 line-clamp-1">{item.title}</p></div></div></td>
@@ -897,6 +1215,53 @@ const AdminDashboard = () => {
                                                     <td className="p-6"><div className="flex flex-col"><p className="font-bold text-slate-900">{item.referrer?.name}</p><p className="text-xs text-slate-500">{item.referrer?.phone}</p></div></td>
                                                     <td className="p-6 text-sm font-bold text-slate-600">{item.number}</td>
                                                     <td className="p-6 text-sm font-bold text-slate-600 capitalize">{item.area}</td>
+                                                </>)}
+                                                {activeTab === 'financial-aid' && (<>
+                                                    <td className="p-6"><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.location}</p></td>
+                                                    <td className="p-6"><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[9px] font-black uppercase tracking-widest">{item.type}</span></td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600">{item.phone}</td>
+                                                    <td className="p-6">
+                                                        {item.isApproved ? (
+                                                            <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] font-black uppercase tracking-widest">Approved</span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleAidStatus(item._id, true)}
+                                                                className="px-3 py-1 bg-blue-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-colors"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-6"><button onClick={() => handleDeleteAid(item._id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button></td>
+                                                </>)}
+                                                {activeTab === 'events' && (<>
+                                                    <td className="p-6"><div className="flex items-center gap-4"><div className="w-10 h-8 bg-slate-100 rounded-lg overflow-hidden"><img src={item.image} className="w-full h-full object-cover" /></div><p className="font-bold text-slate-900 line-clamp-1">{item.title}</p></div></td>
+                                                    <td className="p-6 text-xs font-bold text-slate-500">{new Date(item.date).toLocaleDateString()}</td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600">{item.location}</td>
+                                                    <td className="p-6 text-sm font-bold text-slate-600">{item.organizer}</td>
+                                                    <td className="p-6">
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingEventId(item._id);
+                                                                    setEventFormData({
+                                                                        title: item.title,
+                                                                        description: item.description,
+                                                                        image: item.image,
+                                                                        date: item.date.split('T')[0],
+                                                                        location: item.location,
+                                                                        organizer: item.organizer,
+                                                                        link: item.link
+                                                                    });
+                                                                    setIsManagingEvent(true);
+                                                                }}
+                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            >
+                                                                <Edit3 size={18} />
+                                                            </button>
+                                                            <button onClick={() => handleDeleteEvent(item._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                                        </div>
+                                                    </td>
                                                 </>)}
                                             </tr>
                                         ))}
@@ -1237,6 +1602,272 @@ const AdminDashboard = () => {
                 )}
             </AnimatePresence>
 
+            {/* Local Help Category Modal */}
+            <AnimatePresence>
+                {isManagingHelp && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsManagingHelp(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden"
+                        >
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                                        <Plus size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                                            {editingHelpId ? 'Edit Category' : 'Add Category'}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Configure local help categories</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsManagingHelp(false)}
+                                    className="w-10 h-10 bg-white border border-slate-200 text-slate-400 hover:text-slate-900 hover:border-slate-300 rounded-xl flex items-center justify-center transition-all"
+                                >
+                                    <XCircle size={24} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleCategoryAction} className="p-8 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Category Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. House Needs"
+                                            required
+                                            value={helpFormData.name}
+                                            onChange={e => setHelpFormData({ ...helpFormData, name: e.target.value })}
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Service Types (Comma Separated)</label>
+                                        <textarea
+                                            placeholder="e.g. Electrician, Plumber, Painter"
+                                            required
+                                            value={helpFormData.services}
+                                            onChange={e => setHelpFormData({ ...helpFormData, services: e.target.value })}
+                                            className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800 h-32"
+                                        />
+                                        <p className="text-[10px] text-slate-400 font-bold italic ml-2 mt-1">Separate each service with a comma.</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95"
+                                    >
+                                        {editingHelpId ? 'Update Category' : 'Create Category'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsManagingHelp(false)}
+                                        className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-all font-black"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Event Management Modal */}
+            <AnimatePresence>
+                {isManagingEvent && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsManagingEvent(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden"
+                        >
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                                        <Calendar size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                                            {editingEventId ? 'Edit Event' : 'Add New Event'}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Local community happenings</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsManagingEvent(false)}
+                                    className="w-10 h-10 bg-white border border-slate-200 text-slate-400 hover:text-slate-900 hover:border-slate-300 rounded-xl flex items-center justify-center transition-all"
+                                >
+                                    <XCircle size={24} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleEventAction} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Event Title</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={eventFormData.title}
+                                                onChange={e => setEventFormData({ ...eventFormData, title: e.target.value })}
+                                                placeholder="Summer Music Fest"
+                                                className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Location</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={eventFormData.location}
+                                                onChange={e => setEventFormData({ ...eventFormData, location: e.target.value })}
+                                                placeholder="Central Park, NY"
+                                                className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Date</label>
+                                            <input
+                                                type="date"
+                                                required
+                                                value={eventFormData.date}
+                                                onChange={e => setEventFormData({ ...eventFormData, date: e.target.value })}
+                                                className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Organizer</label>
+                                            <input
+                                                type="text"
+                                                value={eventFormData.organizer}
+                                                onChange={e => setEventFormData({ ...eventFormData, organizer: e.target.value })}
+                                                placeholder="Community Club"
+                                                className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Image Setup</label>
+                                    <div className="flex flex-col md:flex-row gap-4">
+                                        <div className="relative group w-full md:w-1/2 aspect-video bg-slate-100 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 hover:border-orange-500 transition-all">
+                                            {eventFormData.imagePreview || eventFormData.image ? (
+                                                <img src={eventFormData.imagePreview || eventFormData.image} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                    <Upload size={24} className="text-slate-300 mb-2" />
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Click to upload image</p>
+                                                </div>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        const objectUrl = URL.createObjectURL(file);
+                                                        setImageToCrop(objectUrl);
+                                                        setCropShape('rect');
+                                                        setShowCropModal(true);
+                                                        window._croppingTarget = 'event';
+                                                    }
+                                                }}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Or External Image URL"
+                                                value={eventFormData.image}
+                                                onChange={e => setEventFormData({ ...eventFormData, image: e.target.value })}
+                                                className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-sm text-slate-800"
+                                            />
+                                            <p className="text-[9px] text-slate-400 font-bold italic ml-2">Landscape images (16:9) work best for events.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Description</label>
+                                    <textarea
+                                        required
+                                        rows="3"
+                                        value={eventFormData.description}
+                                        onChange={e => setEventFormData({ ...eventFormData, description: e.target.value })}
+                                        placeholder="Tell us more about the event..."
+                                        className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800 resize-none"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">External Link (Optional)</label>
+                                    <input
+                                        type="url"
+                                        value={eventFormData.link}
+                                        onChange={e => setEventFormData({ ...eventFormData, link: e.target.value })}
+                                        placeholder="https://event-website.com"
+                                        className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-orange-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-6 border-t border-slate-100">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-4 bg-orange-600 text-white rounded-2xl font-black shadow-xl shadow-orange-100 hover:bg-orange-700 hover:-translate-y-1 transition-all active:scale-95"
+                                    >
+                                        {editingEventId ? 'Update Event Record' : 'Publish Event'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsManagingEvent(false)}
+                                        className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-all font-black"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Skill Suggestions Modal */}
+            <SkillSuggestionsModal
+                isOpen={isManagingSkills}
+                onClose={() => setIsManagingSkills(false)}
+                pendingSkills={pendingSkillsList}
+                onApprove={handleApproveSkill}
+                onReject={handleRejectSkill}
+            />
+
             {/* Crop Modal */}
             <CropModal
                 isOpen={showCropModal}
@@ -1247,11 +1878,20 @@ const AdminDashboard = () => {
                     if (imageToCrop.startsWith('blob:')) URL.revokeObjectURL(imageToCrop);
                 }}
                 onCropComplete={(croppedData) => {
-                    setCouponFormData({
-                        ...couponFormData,
-                        imageFile: dataURLtoFile(croppedData, 'coupon.png'),
-                        imagePreview: croppedData
-                    });
+                    if (window._croppingTarget === 'event') {
+                        setEventFormData({
+                            ...eventFormData,
+                            imageFile: dataURLtoFile(croppedData, 'event.png'),
+                            imagePreview: croppedData
+                        });
+                        delete window._croppingTarget;
+                    } else {
+                        setCouponFormData({
+                            ...couponFormData,
+                            imageFile: dataURLtoFile(croppedData, 'coupon.png'),
+                            imagePreview: croppedData
+                        });
+                    }
                     setShowCropModal(false);
                     if (imageToCrop.startsWith('blob:')) URL.revokeObjectURL(imageToCrop);
                 }}
@@ -1360,11 +2000,97 @@ const CropModal = ({ isOpen, image, shape, onClose, onCropComplete, onShapeChang
     );
 };
 
-const MessageSquare = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const SkillSuggestionsModal = ({ isOpen, onClose, pendingSkills, onApprove, onReject }) => {
+    if (!isOpen) return null;
 
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-slate-900/60 backdrop-blur-md">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col"
+                >
+                    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                                <Sparkles className="text-blue-600" size={24} /> Skill <span className="text-blue-600">Suggestions</span>
+                            </h2>
+                            <p className="text-slate-500 font-bold text-xs mt-1">Review and approve custom skills from professionals</p>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="w-12 h-12 bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl flex items-center justify-center transition-all"
+                        >
+                            <XCircle size={24} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                        {pendingSkills.length === 0 ? (
+                            <div className="text-center py-20 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200">
+                                <Activity className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-slate-900">No Pending Suggestions</h3>
+                                <p className="text-slate-500 font-medium">Everything is up to date!</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {pendingSkills.map((pro) => (
+                                    <div key={pro._id} className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <h4 className="text-lg font-black text-slate-900">{pro.name}</h4>
+                                                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{pro.number}</p>
+                                            </div>
+                                            <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                                {pro.pendingServices.length} New Skill{pro.pendingServices.length > 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-4">
+                                            {pro.pendingServices.map((skill, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 transition-all flex-1 min-w-[280px]"
+                                                >
+                                                    <div className="flex-1 font-black text-slate-800 uppercase tracking-tight text-sm">
+                                                        {skill}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => onApprove(pro._id, skill)}
+                                                            className="w-10 h-10 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl flex items-center justify-center transition-all group"
+                                                            title="Approve Skill"
+                                                        >
+                                                            <CheckCircle size={20} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => onReject(pro._id, skill)}
+                                                            className="w-10 h-10 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                                                            title="Reject Skill"
+                                                        >
+                                                            <Plus size={20} className="rotate-45" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+const MessageSquare = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const Sparkles = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" /></svg>;
 const Star = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
 const Loader2 = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>;
-
 const Menu = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 
 export default AdminDashboard;

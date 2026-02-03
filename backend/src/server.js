@@ -53,6 +53,8 @@ const imageRoutes = require('./routes/imageRoutes');
 const qrRoutes = require('./routes/qrRoutes');
 const localHelpRoutes = require('./routes/localHelpRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const financialAidRoutes = require('./routes/financialAidRoutes');
+const eventRoutes = require('./routes/eventRoutes');
 const logEvent = require('./utils/logger');
 
 // Global Analytics Middleware
@@ -84,6 +86,8 @@ app.use('/api/image', imageRoutes); // New: Logic for image processing
 app.use('/api/qr', qrRoutes); // New: Logic for QR code generation
 app.use('/api/local-help', localHelpRoutes); // New: Logic for local help line
 app.use('/api/rewards', require('./routes/rewardRoutes')); // New: Rewards & Referrals
+app.use('/api/financial-aid', financialAidRoutes); // New: Financial Aid
+app.use('/api/events', eventRoutes); // New: Local Events
 app.use('/api/admin', adminRoutes); // New: Secure Admin Panel logic
 
 /**
