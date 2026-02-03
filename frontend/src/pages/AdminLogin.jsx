@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../context/AdminContext';
-import { ShieldAlert, Lock, User, Loader2, ArrowRight } from 'lucide-react';
+import { ShieldAlert, Lock, User, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -17,11 +18,15 @@ const AdminLogin = () => {
         setError('');
         setLoading(true);
 
-        const res = await adminLogin(username, password);
-        if (res.success) {
-            navigate('/management/dashboard');
-        } else {
-            setError(res.message);
+        try {
+            const res = await adminLogin(username, password);
+            if (res.success) {
+                navigate('/management/dashboard');
+            } else {
+                setError(res.message);
+            }
+        } catch (err) {
+            setError('System connection failed');
         }
         setLoading(false);
     };
@@ -33,7 +38,9 @@ const AdminLogin = () => {
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl shadow-blue-500/20 flex items-center justify-center mx-auto mb-4 md:mb-6 transform hover:rotate-12 transition-transform">
                         <Lock size={32} className="md:w-10 md:h-10 text-white" />
                     </div>
-                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase mb-2">Admin <span className="text-blue-500">Access</span></h1>
+                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase mb-2">
+                        Admin <span className="text-blue-500">Access</span>
+                    </h1>
                     <p className="text-slate-400 font-medium tracking-wide text-xs md:text-sm uppercase">Restricted Management Portal</p>
                 </div>
 
@@ -66,13 +73,20 @@ const AdminLogin = () => {
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={20} />
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-900/50 border border-slate-700 rounded-xl md:rounded-2xl text-white outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold placeholder:text-slate-600 text-sm md:text-base"
+                                    className="w-full pl-12 pr-12 py-3.5 md:py-4 bg-slate-900/50 border border-slate-700 rounded-xl md:rounded-2xl text-white outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold placeholder:text-slate-600 text-sm md:text-base"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors p-1"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
                             </div>
                         </div>
 

@@ -15,6 +15,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 import api, { API_URL } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ProcessingOverlay from '../components/ProcessingOverlay';
+import RestrictedAccess from '../components/RestrictedAccess';
 
 const InvoiceGenerator = () => {
     const { isLoggedIn, user, loading: authLoading, setShowAuthModal } = useAuth();
@@ -486,25 +487,27 @@ const InvoiceGenerator = () => {
             <div className="max-w-7xl mx-auto px-3 md:px-6 py-8 md:py-12">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Generator</h1>
-                        <div className="flex items-center gap-4 mt-1">
-                            <p className="text-slate-500">Create professional PDF invoices in seconds.</p>
-                            <button
-                                onClick={handleResetBusiness}
-                                className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
-                                title="Delete saved business profile"
-                            >
-                                <RefreshCcw size={10} />
-                                Reset Profile
-                            </button>
-                            <button
-                                onClick={() => setShowTemplateModal(true)}
-                                className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
-                                title="Change Invoice Design"
-                            >
-                                <Palette size={10} />
-                                Change Template
-                            </button>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Invoice Generator</h1>
+                        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mt-2 md:mt-1">
+                            <p className="text-slate-500 text-sm md:text-base">Create professional PDF invoices in seconds.</p>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleResetBusiness}
+                                    className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+                                    title="Delete saved business profile"
+                                >
+                                    <RefreshCcw size={10} />
+                                    Reset Profile
+                                </button>
+                                <button
+                                    onClick={() => setShowTemplateModal(true)}
+                                    className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
+                                    title="Change Invoice Design"
+                                >
+                                    <Palette size={10} />
+                                    Change Template
+                                </button>
+                            </div>
                         </div>
                     </div>
 

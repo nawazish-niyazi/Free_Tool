@@ -12,9 +12,9 @@ const Footer = () => {
     };
 
     return (
-        <footer className="bg-slate-900 pt-12 md:pt-20 pb-8 md:pb-10 px-4 md:px-6 lg:px-8 mt-auto overflow-hidden">
-            <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-12 mb-12 md:mb-16">
+        <footer className="bg-slate-900 pt-12 md:pt-20 pb-8 md:pb-10 px-3 md:px-6 lg:px-8 mt-auto overflow-hidden w-full">
+            <div className="w-full max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-12 mb-12 md:mb-16">
                     {/* Brand & Socials Section */}
                     <div className="space-y-6 text-center md:text-left flex flex-col items-center md:items-start">
                         <div className="flex items-center gap-3">
@@ -23,7 +23,7 @@ const Footer = () => {
                             </div>
                             <span className="text-2xl font-black text-white tracking-tight italic">NAIR <span className="text-blue-500">SOLUTIONS</span></span>
                         </div>
-                        <p className="text-slate-400 font-medium leading-relaxed max-w-xs text-sm md:text-base">
+                        <p className="text-slate-400 font-medium leading-relaxed max-w-lg md:max-w-xs text-sm md:text-base">
                             Empowering your digital journey with professional tools and local connections. Built for efficiency, designed for you.
                         </p>
                         <div className="flex gap-4">
@@ -53,22 +53,22 @@ const Footer = () => {
                     {/* Contact Info Section */}
                     <div className="space-y-8 text-center md:text-left flex flex-col items-center md:items-start">
                         <h3 className="text-white font-black text-lg tracking-tight uppercase border-b-2 border-blue-600 pb-1 inline-block">Contact Us</h3>
-                        <div className="flex flex-wrap justify-center md:justify-start gap-x-12 gap-y-10 w-full">
-                            <a href="tel:9827563406" className="flex flex-col items-center md:items-start gap-4 group cursor-pointer">
+                        <div className="flex flex-wrap justify-center md:justify-start gap-x-12 gap-y-8 w-full">
+                            <a href="tel:9827563406" className="flex flex-col items-center md:items-start gap-3 group cursor-pointer">
                                 <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
                                     <Phone size={18} />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Call us</p>
                                     <p className="text-white font-bold text-base md:text-lg">98275 63406</p>
                                     <p className="text-slate-300 font-semibold text-sm">747 066 9907</p>
                                 </div>
                             </a>
-                            <a href="mailto:nairsolutions02@gmail.com" className="flex flex-col items-center md:items-start gap-4 group cursor-pointer">
+                            <a href="mailto:nairsolutions02@gmail.com" className="flex flex-col items-center md:items-start gap-3 group cursor-pointer">
                                 <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
                                     <Mail size={18} />
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-0.5">
                                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Email us</p>
                                     <p className="text-white font-bold text-base md:text-lg">nairsolutions02@gmail.com</p>
                                 </div>
@@ -77,9 +77,9 @@ const Footer = () => {
                     </div>
 
                     {/* Advertisement Section */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full">
                         <h3 className="text-white font-black text-lg tracking-tight uppercase text-center md:text-left">Advertisement</h3>
-                        <div className="p-6 md:p-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-[2rem] space-y-5 backdrop-blur-md shadow-2xl relative overflow-hidden group">
+                        <div className="p-5 md:p-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-[2rem] space-y-4 md:space-y-5 backdrop-blur-md shadow-2xl relative overflow-hidden group w-full">
                             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-blue-600/10 transition-colors" />
                             <div className="flex items-center gap-2 text-blue-500 justify-center md:justify-start">
                                 <MessageSquare size={20} className="animate-pulse" />
@@ -92,7 +92,7 @@ const Footer = () => {
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleSubmitAdvertisement}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.15em] shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group/btn"
+                                className="w-full py-3.5 md:py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.15em] shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group/btn"
                             >
                                 Contact for Ads
                                 <Send size={16} className="group-hover/btn:translate-x-1 transition-transform" />
@@ -101,9 +101,9 @@ const Footer = () => {
                     </div>
 
                     {/* Location Section */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full">
                         <h3 className="text-white font-black text-lg tracking-tight uppercase text-center md:text-left">Find Us</h3>
-                        <div className="rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl h-56 md:h-48 group relative">
+                        <div className="rounded-[2rem] overflow-hidden border border-slate-700/50 shadow-2xl h-56 md:h-48 group relative w-full">
                             <iframe
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3719.647478881766!2d81.32667057504906!3d21.20615848048798!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a293dc78703616f%3A0x3f591dbc7d22f0e8!2sNAIR%20SOLUTIONS!5e0!3m2!1sen!2sin!4v1769778603864!5m2!1sen!2sin"
                                 width="100%"
@@ -111,7 +111,7 @@ const Footer = () => {
                                 style={{ border: 0 }}
                                 allowFullScreen=""
                                 loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade"
+                                referrerPolicy="no-referrer-when-downgrade"
                                 className="grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000"
                             ></iframe>
                             <div className="absolute inset-0 bg-blue-600/5 pointer-events-none group-hover:bg-transparent transition-colors" />

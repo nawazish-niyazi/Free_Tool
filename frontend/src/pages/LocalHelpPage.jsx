@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProcessingOverlay from '../components/ProcessingOverlay';
+import RestrictedAccess from '../components/RestrictedAccess';
 
 const LOCATIONS = ["Smriti Nagar", "Nehru Nagar", "Kohka", "Supela", "Durg"];
 
@@ -264,38 +265,8 @@ const LocalHelpPage = () => {
 
     // Removed redundant useEffect since the new one handles everything
 
-    if (!isLoggedIn) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Navbar />
-                <div className="flex-1 flex items-center justify-center p-3 md:p-6">
-                    <div className="max-w-md w-full bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-center shadow-xl shadow-blue-900/5 border border-gray-100">
-                        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-                            <Lock size={40} />
-                        </div>
-                        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Login Required</h2>
-                        <p className="text-slate-500 font-medium mb-10 leading-relaxed">
-                            The Local Help Line is an exclusive feature for our registered members. Please sign in to find verified professionals near you.
-                        </p>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setShowAuthModal(true)}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
-                            >
-                                Sign In Now
-                            </button>
-                            <button
-                                onClick={() => navigate('/')}
-                                className="w-full py-4 bg-gray-100 text-slate-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
-                            >
-                                Back to Home
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // Full page lock screen removed
+
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -545,7 +516,11 @@ const LocalHelpPage = () => {
 
                 {/* Results List */}
                 <div>
-                    {loading && workers.length === 0 ? (
+                    {!isLoggedIn ? (
+                        <div className="bg-white p-12 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                            <RestrictedAccess onLoginClick={() => setShowAuthModal(true)} />
+                        </div>
+                    ) : loading && workers.length === 0 ? (
                         <div className="text-center py-12">
                             <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-4" />
                             <p className="text-slate-500 font-medium">Searching for help nearby...</p>

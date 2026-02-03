@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard, Users, Briefcase, FileText,
     Activity, LogOut, ChevronRight, TrendingUp,
-    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle, Gift, Ticket, Plus, Image, Upload, Landmark
+    ShieldCheck, AlertTriangle, Database, Trash2, Edit3, Search, Calendar, Phone, Mail, Clock, UserPlus, CheckCircle, XCircle, Gift, Ticket, Plus, Image, Upload, Landmark, Bell
 } from 'lucide-react';
 import api from '../api/axios';
 import {
@@ -194,7 +194,7 @@ const AdminDashboard = () => {
     }, []);
 
     useEffect(() => {
-        if (activeTab !== 'overview') {
+        if (activeTab !== 'overview' && activeTab !== 'notifications') {
             fetchListData();
         }
     }, [activeTab]);
@@ -502,6 +502,8 @@ const AdminDashboard = () => {
 
     if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Activity className="animate-spin text-blue-600" size={48} /></div>;
 
+    const totalNotifications = (stats?.newUsers || 0) + (stats?.pendingWorkers || 0) + (stats?.pendingReferrals || 0);
+
     const SidebarContent = () => (
         <>
             <div className="p-6 md:p-8">
@@ -515,6 +517,7 @@ const AdminDashboard = () => {
                 <nav className="space-y-2">
                     {[
                         { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+                        { id: 'notifications', label: 'Notifications', icon: Bell, badge: totalNotifications },
                         { id: 'users', label: 'Users', icon: Users, badge: stats?.newUsers },
                         { id: 'professionals', label: 'Professional Users', icon: Briefcase },
                         { id: 'local-help', label: 'Local Help', icon: Activity },
@@ -770,8 +773,82 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
+                {activeTab === 'notifications' && (
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        {/* Action Needed Section */}
+                        {totalNotifications > 0 && (
+                            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-900/5">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
+                                    <AlertTriangle className="text-orange-500" size={20} /> Action Required
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {stats?.newUsers > 0 && (
+                                        <button onClick={() => setActiveTab('users')} className="flex items-center gap-4 p-4 rounded-2xl bg-blue-50 group hover:bg-blue-100 transition-colors">
+                                            <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-200"><Users size={20} /></div>
+                                            <div className="text-left">
+                                                <p className="font-black text-slate-900">{stats.newUsers} New Users</p>
+                                                <p className="text-xs text-blue-600 font-bold">Review new registrations</p>
+                                            </div>
+                                            <ChevronRight size={16} className="ml-auto text-blue-400" />
+                                        </button>
+                                    )}
+                                    {stats?.pendingWorkers > 0 && (
+                                        <button onClick={() => setActiveTab('professionals')} className="flex items-center gap-4 p-4 rounded-2xl bg-orange-50 group hover:bg-orange-100 transition-colors">
+                                            <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center group-hover:bg-orange-200"><Briefcase size={20} /></div>
+                                            <div className="text-left">
+                                                <p className="font-black text-slate-900">{stats.pendingWorkers} Pending Pros</p>
+                                                <p className="text-xs text-orange-600 font-bold">Approve status updates</p>
+                                            </div>
+                                            <ChevronRight size={16} className="ml-auto text-orange-400" />
+                                        </button>
+                                    )}
+                                    {stats?.pendingReferrals > 0 && (
+                                        <button onClick={() => setActiveTab('referrals')} className="flex items-center gap-4 p-4 rounded-2xl bg-purple-50 group hover:bg-purple-100 transition-colors">
+                                            <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center group-hover:bg-purple-200"><Gift size={20} /></div>
+                                            <div className="text-left">
+                                                <p className="font-black text-slate-900">{stats.pendingReferrals} Pending Referrals</p>
+                                                <p className="text-xs text-purple-600 font-bold">Verify referrals</p>
+                                            </div>
+                                            <ChevronRight size={16} className="ml-auto text-purple-400" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* All Notifications Stream */}
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-900/5">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                    <Bell className="text-blue-600" size={20} /> All Notifications
+                                </h3>
+                                <button onClick={fetchStats} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-all"><Activity size={18} /></button>
+                            </div>
+                            <div className="space-y-2">
+                                {recentLogs.length > 0 ? recentLogs.map((log, i) => (
+                                    <div key={i} className="flex gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                                        <div className="shrink-0 mt-1">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-black text-slate-900">{log.event.replace(/_/g, ' ')}</p>
+                                            <p className="text-xs text-slate-500 font-bold mt-0.5">
+                                                {log.userId?.name || 'System User'}
+                                                <span className="mx-2">•</span>
+                                                {new Date(log.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-12 text-slate-400 font-bold">No recent notifications</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Tab Views (Users, Professionals, Invoices, Logs) */}
-                {activeTab !== 'overview' && (
+                {activeTab !== 'overview' && activeTab !== 'notifications' && (
                     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-900/5 overflow-hidden">
                         {listLoading ? (
                             <div className="py-32 flex flex-col items-center justify-center text-slate-400"><Loader2 className="animate-spin mb-4" size={40} /><p className="font-black uppercase tracking-widest text-xs">Decrypting Records...</p></div>

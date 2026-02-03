@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { X, Phone, Lock, User, Mail, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
-const AuthModal = ({ isOpen, onClose, onSuccess }) => {
+const AuthModal = ({ isOpen, onClose, onSuccess, message }) => {
+    const { t } = useTranslation();
     const { login, register } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -75,12 +77,12 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                     <ShieldCheck size={26} />
                                 </div>
                                 <h2 className="text-2xl font-black text-slate-900 mb-2">
-                                    {isLogin ? 'Welcome Back' : 'Join N.A.I.R'}
+                                    {isLogin ? t('auth.welcome_back') : t('auth.join_us')}
                                 </h2>
                                 <p className="text-slate-500 font-medium text-sm px-2">
                                     {isLogin
-                                        ? 'Log in to securely download your files and keep track of your history.'
-                                        : 'Create your free account to access unlimited downloads and history.'}
+                                        ? (message || t('auth.login_desc'))
+                                        : t('auth.register_desc')}
                                 </p>
                             </div>
 
@@ -91,7 +93,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                         <input
                                             type="text"
                                             name="name"
-                                            placeholder="Full Name"
+                                            placeholder={t('auth.full_name')}
                                             required
                                             value={formData.name}
                                             onChange={handleChange}
@@ -105,7 +107,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                     <input
                                         type="tel"
                                         name="phone"
-                                        placeholder="Phone Number"
+                                        placeholder={t('auth.phone')}
                                         required
                                         value={formData.phone}
                                         onChange={handleChange}
@@ -119,7 +121,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                         <input
                                             type="email"
                                             name="email"
-                                            placeholder="Email Address (Optional)"
+                                            placeholder={t('auth.email')}
                                             value={formData.email}
                                             onChange={handleChange}
                                             className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500/20 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all font-bold placeholder:font-medium text-slate-900"
@@ -132,7 +134,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                     <input
                                         type="password"
                                         name="password"
-                                        placeholder="Password"
+                                        placeholder={t('auth.password')}
                                         required
                                         value={formData.password}
                                         onChange={handleChange}
@@ -156,7 +158,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                         <Loader2 className="animate-spin" size={24} />
                                     ) : (
                                         <>
-                                            {isLogin ? 'Sign In' : 'Create Account'}
+                                            {isLogin ? t('auth.sign_in') : t('auth.create_account')}
                                             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}
@@ -165,24 +167,24 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
 
                             <div className="mt-5 text-center">
                                 <p className="text-slate-500 font-semibold text-xs">
-                                    {isLogin ? "Don't have an account?" : "Already have an account?"}
+                                    {isLogin ? t('auth.no_account') : t('auth.have_account')}
                                 </p>
                                 <button
                                     onClick={() => { setIsLogin(!isLogin); setError(null); }}
                                     className="mt-1.5 text-blue-600 font-bold text-sm md:hover:underline underline-offset-4"
                                 >
-                                    {isLogin ? 'Create one for free' : 'Sign in to your account'}
+                                    {isLogin ? t('auth.create_free') : t('auth.sign_in_now')}
                                 </button>
 
                                 {isLogin && (
                                     <div className="mt-5 pt-4 border-t border-slate-100">
-                                        <p className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider mb-1.5">Want to earn with us?</p>
+                                        <p className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider mb-1.5">{t('auth.earn_with_us')}</p>
                                         <a
                                             href="/worker-signup"
                                             onClick={onClose}
                                             className="text-indigo-600 font-bold text-sm hover:text-indigo-700 md:hover:underline underline-offset-4 flex items-center justify-center gap-1"
                                         >
-                                            Create professional account
+                                            {t('auth.worker_signup_link')}
                                             <ArrowRight size={13} />
                                         </a>
                                     </div>
@@ -192,7 +194,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
 
                         <div className="p-4 bg-slate-50 border-t border-slate-100 text-center rounded-b-[32px]">
                             <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">
-                                Secure Login Protected by NAIR Solutions
+                                {t('auth.secure_login')}
                             </p>
                         </div>
                     </motion.div>

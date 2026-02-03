@@ -1,9 +1,3 @@
-/**
- * Home Page
- * This is the main page that users see when they open the website.
- * It shows a list of all the different tools available.
- */
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ToolCard from '../components/ToolCard';
@@ -11,8 +5,10 @@ import { FileType, Image, Zap, Shield, FileText, Layers, Lock, Unlock, Droplets,
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const Home = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
 
     // Rotating Placeholder Logic
@@ -31,50 +27,50 @@ const Home = () => {
      */
     const tools = [
         {
-            title: 'Local Help',
-            description: 'Find local plumbers, electricians, and other professionals nearby.',
+            title: t('home.tools.local_help_title'),
+            description: t('home.tools.local_help_desc'),
             icon: Search,
             to: '/local-help',
             color: 'bg-cyan-100 hover:bg-cyan-200'
         },
         {
-            title: 'Financial Aids',
-            description: 'Find LALA, NBFC, and Banking assistance near you.',
+            title: t('home.tools.financial_aid_title'),
+            description: t('home.tools.financial_aid_desc'),
             icon: Landmark,
             to: '/financial-aid',
             color: 'bg-rose-100 hover:bg-rose-200'
         },
         {
-            title: 'Invoice Generator',
-            description: 'Create professional PDF invoices with custom branding.',
+            title: t('home.tools.invoice_generator_title'),
+            description: t('home.tools.invoice_generator_desc'),
             icon: Building2,
             to: '/invoice-generator',
             color: 'bg-slate-200 hover:bg-slate-300 border-2 border-slate-900/5'
         },
         {
-            title: 'Events Near You',
-            description: 'Discover upcoming local events and happenings.',
+            title: t('home.tools.events_title'),
+            description: t('home.tools.events_desc'),
             icon: Calendar,
             to: '/events',
             color: 'bg-orange-100 hover:bg-orange-200'
         },
         {
-            title: 'QR Code Generator',
-            description: 'Convert any link into a custom QR code instantly.',
+            title: t('home.tools.qr_generator_title'),
+            description: t('home.tools.qr_generator_desc'),
             icon: QrCode,
             to: '/qr-generator',
             color: 'bg-yellow-100 hover:bg-yellow-200'
         },
         {
-            title: 'PDF Tools',
-            description: 'Convert, Compress, Protect, and Edit your PDF files in one place.',
+            title: t('home.tools.pdf_tools_title'),
+            description: t('home.tools.pdf_tools_desc'),
             icon: FileText,
             to: '/pdf-tools',
             color: 'bg-indigo-100 hover:bg-indigo-200'
         },
         {
-            title: 'Image Tools',
-            description: 'Resize, Compress, and Convert Images instantly.',
+            title: t('home.tools.image_tools_title'),
+            description: t('home.tools.image_tools_desc'),
             icon: Image,
             to: '/image-tools',
             color: 'bg-emerald-100 hover:bg-emerald-200'
@@ -90,10 +86,10 @@ const Home = () => {
             <div className="relative isolate px-4 sm:px-6 pt-10 sm:pt-12 lg:px-8">
                 <div className="mx-auto max-w-4xl py-8 sm:py-20 lg:pt-14 lg:pb-24 text-center">
                     <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6">
-                        One-Stop <span className="text-blue-600">Solution</span>
+                        {t('home.hero_title_1')} <span className="text-blue-600">{t('home.hero_title_2')}</span>
                     </h1>
                     <p className="text-base sm:text-lg lg:text-xl leading-relaxed text-gray-600 mb-10 max-w-2xl mx-auto px-4">
-                        Your all-in-one destination for documents, images, and tools. One place to find everything you need to get the job done.
+                        {t('home.hero_subtitle')}
                     </p>
 
                     {/* Local Help Line: Premium Mobile-First Search Bar */}
@@ -105,10 +101,8 @@ const Home = () => {
                             transition={{ duration: 0.5 }}
                             className="flex flex-col items-center px-4 max-w-2xl mx-auto w-full"
                         >
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="h-[2px] w-8 md:w-12 bg-blue-600/20 rounded-full"></div>
-                                <h2 className="text-sm md:text-xl font-black text-slate-900 tracking-[0.2em] uppercase">Local Help Line</h2>
-                                <div className="h-[2px] w-8 md:w-12 bg-blue-600/20 rounded-full"></div>
+                            <div className="flex items-center mb-5">
+                                <h2 className="text-sm md:text-xl font-black text-slate-900 uppercase">{t('home.search_title')}</h2>
                             </div>
 
                             <Link to="/local-help" className="w-full">
@@ -121,7 +115,7 @@ const Home = () => {
                                         </div>
                                         <div className="flex items-center gap-1.5 overflow-hidden h-6 md:h-8">
                                             <span className="text-sm md:text-lg text-slate-400 font-semibold whitespace-nowrap">
-                                                Search for
+                                                {t('home.search_prefix')}
                                             </span>
                                             <div className="relative h-full flex items-center">
                                                 <AnimatePresence mode="wait">

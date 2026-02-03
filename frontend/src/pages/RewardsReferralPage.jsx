@@ -3,10 +3,11 @@ import Navbar from '../components/Navbar';
 import { Gift, Ticket, Share2, Copy, Check, Info, Users, MapPin, Briefcase, Phone, Send, Loader2, Star, Sparkles, Heart, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { useRef } from 'react';
 import api from '../api/axios';
 
-const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy, copiedCode }) => (
+const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy, copiedCode, t }) => (
     <motion.div
         layout
         initial={{ opacity: 0, scale: 0.9 }}
@@ -22,7 +23,7 @@ const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             />
             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-blue-600 font-black text-[10px] shadow-lg uppercase tracking-wider">
-                Limited
+                {t('rewards.limited')}
             </div>
         </div>
         <div className="p-6 flex-1 flex flex-col">
@@ -49,7 +50,7 @@ const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy
                             className="p-3 bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-between mb-3"
                         >
                             <div>
-                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Code</p>
+                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">{t('rewards.code')}</p>
                                 <p className="text-base font-black text-blue-800 tracking-widest uppercase">{coupon.code}</p>
                             </div>
                             <button
@@ -65,11 +66,12 @@ const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy
                 <button
                     onClick={() => handleRevealAndCopy(coupon._id, coupon.code)}
                     className={`w-full py-3 rounded-xl font-black text-sm shadow-lg transition-all active:scale-95 ${capturedCodes.includes(coupon._id)
-                        ? 'bg-slate-100 text-slate-500 cursor-default'
+                        ? 'bg-slate-100 text-slate-500 cursor-not-allowed'
                         : 'bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800 hover:-translate-y-1'
                         }`}
+                    disabled={capturedCodes.includes(coupon._id)}
                 >
-                    {capturedCodes.includes(coupon._id) ? 'Code Revealed' : 'Get Code'}
+                    {capturedCodes.includes(coupon._id) ? t('rewards.code_revealed') : t('rewards.get_code')}
                 </button>
             </div>
         </div>
@@ -77,6 +79,7 @@ const CouponCard = ({ coupon, isGrid = false, capturedCodes, handleRevealAndCopy
 );
 
 const RewardsReferralPage = () => {
+    const { t } = useTranslation();
     const { isLoggedIn, setShowAuthModal } = useAuth();
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -170,7 +173,7 @@ const RewardsReferralPage = () => {
             }
         } catch (err) {
             console.error('Referral error:', err);
-            alert('Failed to submit referral. Please try again.');
+            alert(t('common.error_title') + ': ' + (err.response?.data?.message || 'Failed to submit referral.'));
         } finally {
             setSubmitting(false);
         }
@@ -193,13 +196,13 @@ const RewardsReferralPage = () => {
                 >
                     <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-white text-sm font-bold mb-6">
                         <Sparkles size={16} />
-                        Exclusive Rewards for Our Community
+                        {t('rewards.tagline')}
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-                        Deals <span className="text-blue-200">Referrals</span>
+                        {t('rewards.hero_title_1')} <span className="text-blue-200">{t('rewards.hero_title_2')}</span>
                     </h1>
                     <p className="text-blue-50 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed">
-                        Earn rewards and discover exclusive deals from our premium partners. This page is dedicated to helping you save and earn.
+                        {t('rewards.hero_subtitle')}
                     </p>
                 </motion.div>
             </div>
@@ -213,7 +216,7 @@ const RewardsReferralPage = () => {
                             <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
                                 <Ticket size={24} />
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Find Coupons & Best Deals</h2>
+                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{t('rewards.coupons_title')}</h2>
                         </div>
 
                         {coupons.length > 3 && (
@@ -221,7 +224,7 @@ const RewardsReferralPage = () => {
                                 onClick={() => setShowAll(!showAll)}
                                 className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-black hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-sm group"
                             >
-                                {showAll ? 'Show Slider' : 'View All Coupons'}
+                                {showAll ? t('rewards.show_slider') : t('rewards.view_all')}
                                 <motion.div
                                     animate={{ rotate: showAll ? 180 : 0 }}
                                     className="text-blue-500 group-hover:text-white"
@@ -292,6 +295,7 @@ const RewardsReferralPage = () => {
                                                     capturedCodes={capturedCodes}
                                                     handleRevealAndCopy={handleRevealAndCopy}
                                                     copiedCode={copiedCode}
+                                                    t={t}
                                                 />
                                             ))}
                                         </div>
@@ -312,6 +316,7 @@ const RewardsReferralPage = () => {
                                                 capturedCodes={capturedCodes}
                                                 handleRevealAndCopy={handleRevealAndCopy}
                                                 copiedCode={copiedCode}
+                                                t={t}
                                             />
                                         ))}
                                     </motion.div>
@@ -320,8 +325,8 @@ const RewardsReferralPage = () => {
                         ) : (
                             <div className="bg-white rounded-[32px] p-12 text-center border-2 border-dashed border-slate-200">
                                 <Ticket className="w-20 h-20 text-slate-200 mx-auto mb-6" />
-                                <h3 className="text-2xl font-black text-slate-800 mb-2">No active coupons right now</h3>
-                                <p className="text-slate-500 font-medium">Check back soon for amazing deals and discounts!</p>
+                                <h3 className="text-2xl font-black text-slate-800 mb-2">{t('rewards.no_coupons')}</h3>
+                                <p className="text-slate-500 font-medium">{t('rewards.no_coupons_desc')}</p>
                             </div>
                         )}
                     </div>
@@ -338,10 +343,10 @@ const RewardsReferralPage = () => {
                             <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
                                 <Users size={28} />
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Referrals and Get Rewards</h2>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t('rewards.referral_title')}</h2>
                         </div>
                         <p className="text-slate-500 text-lg font-medium leading-relaxed mb-6">
-                            Help your friends find reliable professionals and support our local community. Whether it's a painter, electrician, or any service expert, refer them to us and help the community grow stronger.
+                            {t('rewards.referral_desc')}
                         </p>
 
 
@@ -355,7 +360,7 @@ const RewardsReferralPage = () => {
                     >
                         <div className="absolute top-0 right-0 p-12 bg-blue-50/50 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl" />
 
-                        <h3 className="text-2xl font-black text-slate-900 mb-8 relative">Submit a Referral</h3>
+                        <h3 className="text-2xl font-black text-slate-900 mb-8 relative">{t('rewards.submit_title')}</h3>
 
                         <form onSubmit={handleReferralSubmit} className="space-y-6 relative">
                             {referralSuccess ? (
@@ -367,8 +372,8 @@ const RewardsReferralPage = () => {
                                     <div className="w-16 h-16 bg-green-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
                                         <Check size={32} />
                                     </div>
-                                    <h4 className="text-xl font-black text-green-900 mb-2">Success!</h4>
-                                    <p className="text-green-700 font-bold">Your referral has been submitted successfully. We'll contact them soon.</p>
+                                    <h4 className="text-xl font-black text-green-900 mb-2">{t('rewards.success_title')}</h4>
+                                    <p className="text-green-700 font-bold">{t('rewards.success_desc')}</p>
                                 </motion.div>
                             ) : (
                                 <>
@@ -377,12 +382,12 @@ const RewardsReferralPage = () => {
                                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                                 <Users size={20} />
                                             </div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">Name</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">{t('rewards.label_name')}</label>
                                             <input
                                                 type="text"
                                                 name="name"
                                                 required
-                                                placeholder="Enter full name"
+                                                placeholder={t('rewards.placeholder_name')}
                                                 value={referralData.name}
                                                 onChange={handleReferralChange}
                                                 className="w-full pl-14 pr-6 pt-8 pb-3 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
@@ -393,12 +398,12 @@ const RewardsReferralPage = () => {
                                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                                 <Briefcase size={20} />
                                             </div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">Service Needed</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">{t('rewards.label_service')}</label>
                                             <input
                                                 type="text"
                                                 name="service"
                                                 required
-                                                placeholder="e.g. Electrician"
+                                                placeholder={t('rewards.placeholder_service')}
                                                 value={referralData.service}
                                                 onChange={handleReferralChange}
                                                 className="w-full pl-14 pr-6 pt-8 pb-3 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
@@ -409,12 +414,12 @@ const RewardsReferralPage = () => {
                                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                                 <Phone size={20} />
                                             </div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">Phone Number</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">{t('rewards.label_phone')}</label>
                                             <input
                                                 type="tel"
                                                 name="number"
                                                 required
-                                                placeholder="+91 00000 00000"
+                                                placeholder={t('rewards.placeholder_phone')}
                                                 value={referralData.number}
                                                 onChange={handleReferralChange}
                                                 className="w-full pl-14 pr-6 pt-8 pb-3 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
@@ -425,12 +430,12 @@ const RewardsReferralPage = () => {
                                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                                 <MapPin size={20} />
                                             </div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">Service Area</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest absolute top-3 left-14 z-10 transition-colors group-focus-within:text-blue-500">{t('rewards.label_area')}</label>
                                             <input
                                                 type="text"
                                                 name="area"
                                                 required
-                                                placeholder="Enter location/area"
+                                                placeholder={t('rewards.placeholder_area')}
                                                 value={referralData.area}
                                                 onChange={handleReferralChange}
                                                 className="w-full pl-14 pr-6 pt-8 pb-3 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold text-slate-800"
@@ -447,7 +452,7 @@ const RewardsReferralPage = () => {
                                             <Loader2 size={24} className="animate-spin" />
                                         ) : (
                                             <>
-                                                Submit Referral
+                                                {t('rewards.submit_button')}
                                                 <Send size={24} />
                                             </>
                                         )}

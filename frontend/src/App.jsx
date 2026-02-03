@@ -64,7 +64,7 @@ function AppContent() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden">
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}

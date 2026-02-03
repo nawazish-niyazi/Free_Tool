@@ -1,0 +1,91 @@
+{
+    "common": {
+        "app_name": "N.A.I.R सॉल्यूशंस",
+        "back_to_home": "होम पर वापस जाएं",
+        "loading": "लोड हो रहा है...",
+        "error_title": "ओह! कुछ गड़बड़ है",
+        "success_title": "सफल!",
+        "download": "डाउनलोड करें",
+        "upload": "फोटो या फाइल डालें",
+        "clear": "हटाएं",
+        "processing": "काम चल रहा है...",
+        "powered_by": "पावर्ड बाय",
+        "use_tool": "इस्तेमाल करें"
+    },
+    "nav": {
+        "home": "होम",
+        "tools": "टूल्स",
+        "pdf_tools": "PDF टूल्स",
+        "image_tools": "फोटो टूल्स",
+        "qr_generator": "QR कोड",
+        "invoice_generator": "बिल (Invoice)",
+        "financial_aid": "पैसे की मदद",
+        "events": "ईवेंट्स",
+        "deals": "ऑफर्स",
+        "local_help": "लोकल हेल्प",
+        "sign_in": "लॉगिन",
+        "sign_out": "बंद करें",
+        "qr_gen_short": "QR कोड",
+        "events_near_me": "कार्यक्रम"
+    },
+    "home": {
+        "hero_title_1": "One-Stop",
+        "hero_title_2": "Solution",
+        "hero_subtitle": "सब कुछ एक ही जगह – दस्तावेज़, चित्र और टूल्स",
+        "search_title": "लोकल हेल्प लाइन",
+        "search_prefix": "यहाँ खोजें",
+        "tools_title": "हमारे खास टूल्स",
+        "tools": {
+            "local_help_title": "लोकल हेल्प",
+            "local_help_desc": "अपने आस-पास बिजली मिस्त्री, प्लंबर और अन्य मिस्त्रियों को ढूंढें।",
+            "financial_aid_title": "पैसों की मदद",
+            "financial_aid_desc": "अपने पास के बैंक और लोन सुविधा देने वालों को ढूंढें।",
+            "invoice_generator_title": "बिल जनरेटर",
+            "invoice_generator_desc": "अपने बिजनेस के लिए प्रोफेशनल बिल (PDF) बनाएं।",
+            "events_title": "आस-पास के कार्यक्रम",
+            "events_desc": "अपने शहर में हो रहे कार्यक्रमों की जानकारी पाएं।",
+            "qr_generator_title": "QR कोड जनरेटर",
+            "qr_generator_desc": "किसी भी लिंक को तुरंत QR कोड में बदलें।",
+            "pdf_tools_title": "PDF टूल्स",
+            "pdf_tools_desc": "PDF को बदलें, छोटा करें और पासवर्ड लगाएं - सब एक जगह।",
+            "image_tools_title": "फोटो टूल्स",
+            "image_tools_desc": "फोटो का साइज बदलें और उसे कनवर्ट करें।"
+        }
+    },
+    "auth": {
+        "welcome_back": "स्वागत है",
+        "join_us": "N.A.I.R Solutions से जुड़ें",
+        "login_desc": "फाइलें सुरक्षित रूप से डाउनलोड करने के लिए लॉगिन करें।",
+        "register_desc": "फ्री में अपना खाता बनाएं और पिछला काम देखें।",
+        "full_name": "पूरा नाम",
+        "phone": "फ़ोन नंबर",
+        "email": "ईमेल (ज़रूरी नहीं)",
+        "password": "पासवर्ड",
+        "sign_in": "लॉगिन करें",
+        "create_account": "खाता बनाएं",
+        "have_account": "पहले से खाता है?",
+        "no_account": "खाता नहीं है?",
+        "sign_in_now": "अभी लॉगिन करें",
+        "create_free": "फ्री में बनाएं",
+        "worker_signup_link": "प्रोफेशनल खाता बनाएं",
+        "secure_login": "सुरक्षित लॉगिन - NAIR सॉल्यूशंस",
+        "earn_with_us": "हमारे साथ जुड़ें"
+    },
+    "logout": {
+        "confirm_title": "बंद करें?",
+        "confirm_message": "क्या आप वाकई बाहर निकलना चाहते हैं?",
+        "cancel": "रद्द करें",
+        "confirm_button": "हाँ, बंद करें"
+    },
+    "admin": {
+        "login_title_1": "एडमिन",
+        "login_title_2": "एक्सेस",
+        "login_subtitle": "मैनेजमेंट पोर्टल",
+        "username_label": "यूजरनेम",
+        "username_placeholder": "अपना नाम लिखें",
+        "password_label": "सीक्रेट पासवर्ड (Key)",
+        "login_button": "एक्सेस शुरू करें",
+        "footer_note": "सिर्फ अधिकृत व्यक्तियों के लिए • सुरक्षित और एन्क्रिप्टेड",
+        "login_error_default": "सिस्टम से संपर्क नहीं हो पाया"
+    }
+}

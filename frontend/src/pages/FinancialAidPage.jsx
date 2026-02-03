@@ -4,9 +4,12 @@ import Navbar from '../components/Navbar';
 import { Landmark, Phone, MapPin, Search, Filter, Plus, Loader2, Landmark as BankIcon, Wallet, Building, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import RestrictedAccess from '../components/RestrictedAccess';
 
 const FinancialAidPage = () => {
     const navigate = useNavigate();
+    const { isLoggedIn, setShowAuthModal } = useAuth();
     const [aids, setAids] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState('');
@@ -75,8 +78,12 @@ const FinancialAidPage = () => {
                     ))}
                 </div>
 
-                {/* Results Grid */}
-                {loading ? (
+                {/* Results Grid or Restricted Access */}
+                {!isLoggedIn ? (
+                    <div className="bg-white p-12 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                        <RestrictedAccess onLoginClick={() => setShowAuthModal(true)} />
+                    </div>
+                ) : loading ? (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader2 size={48} className="text-blue-600 animate-spin mb-4" />
                         <p className="text-slate-500 font-black uppercase tracking-widest text-sm">Searching for providers...</p>

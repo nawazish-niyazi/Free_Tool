@@ -406,9 +406,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                     className="relative bg-white w-full max-w-2xl rounded-[32px] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
                 >
                     {/* Header */}
-                    <div className="flex justify-between items-center p-4 md:p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
+                    <div className="flex justify-between items-center p-3 md:p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
                         <div>
-                            <h2 className="text-xl md:text-2xl font-black text-slate-900">My Profile</h2>
+                            <h2 className="text-lg md:text-2xl font-black text-slate-900">My Profile</h2>
                             {professional && (
                                 <p className="text-xs md:text-sm text-blue-600 italic font-medium mt-1">Professional User</p>
                             )}
@@ -418,31 +418,31 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                    <div className="flex-1 overflow-y-auto p-3 md:p-8">
                         {/* Avatar Section */}
-                        <div className="flex flex-col items-center mb-8">
+                        <div className="flex flex-col items-center mb-6 md:mb-8">
                             <div className="relative group">
-                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl bg-slate-100">
+                                <div className="w-20 h-20 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl bg-slate-100">
                                     {personalData.profilePicture ? (
                                         <img src={personalData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                            <User size={48} />
+                                            <User size={32} className="md:w-12 md:h-12" />
                                         </div>
                                     )}
                                 </div>
-                                <label className="absolute bottom-1 right-1 p-2 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700 transition-all shadow-lg">
-                                    <Camera size={16} />
+                                <label className="absolute bottom-1 right-1 p-1.5 md:p-2 bg-blue-600 text-white rounded-full cursor-pointer hover:bg-blue-700 transition-all shadow-lg">
+                                    <Camera size={14} className="md:w-4 md:h-4" />
                                     <input type="file" className="hidden" accept="image/*" onChange={onFileChange} />
                                 </label>
                             </div>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex p-1 bg-slate-100 rounded-xl mb-8">
+                        <div className="flex p-1 bg-slate-100 rounded-xl mb-6 md:mb-8">
                             <button
                                 onClick={() => setActiveTab('personal')}
-                                className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'personal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                className={`flex-1 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm transition-all ${activeTab === 'personal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 Personal Details
@@ -450,7 +450,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                             {professional && (
                                 <button
                                     onClick={() => setActiveTab('professional')}
-                                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'professional' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    className={`flex-1 py-2 md:py-2.5 rounded-lg font-bold text-xs md:text-sm transition-all ${activeTab === 'professional' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     Professional Profile
@@ -463,7 +463,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`p-4 rounded-xl mb-6 text-sm font-bold flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                                className={`p-3 md:p-4 rounded-xl mb-6 text-sm font-bold flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                                     }`}
                             >
                                 <AlertCircle size={16} />
@@ -472,44 +472,44 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                         )}
 
                         {activeTab === 'personal' ? (
-                            <div className="space-y-6">
-                                <div className="grid gap-4">
+                            <div className="space-y-4 md:space-y-6">
+                                <div className="grid gap-3 md:gap-4">
                                     <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
+                                        <label className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Full Name</label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 type="text"
                                                 name="name"
                                                 value={personalData.name}
                                                 onChange={handlePersonalChange}
-                                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-slate-900"
+                                                className="w-full pl-9 md:pl-10 pr-4 py-2 md:py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-sm text-slate-900"
                                             />
                                         </div>
                                     </div>
                                     <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Email Address</label>
+                                        <label className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Email Address</label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 type="email"
                                                 name="email"
                                                 value={personalData.email}
                                                 onChange={handlePersonalChange}
-                                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-slate-900"
+                                                className="w-full pl-9 md:pl-10 pr-4 py-2 md:py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-sm text-slate-900"
                                             />
                                         </div>
                                     </div>
                                     <div className="group">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Phone Number</label>
+                                        <label className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Phone Number</label>
                                         <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 type="text"
                                                 name="phone"
                                                 value={personalData.phone}
                                                 onChange={handlePersonalChange}
-                                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-slate-900"
+                                                className="w-full pl-9 md:pl-10 pr-4 py-2 md:py-3 bg-slate-50 border-transparent focus:bg-white border-2 rounded-xl focus:border-blue-500 transition-all font-semibold text-sm text-slate-900"
                                             />
                                         </div>
                                     </div>
@@ -518,9 +518,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                 <button
                                     onClick={savePersonalProfile}
                                     disabled={loading}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 md:py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
                                 >
-                                    {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Save Changes</>}
+                                    {loading ? <Loader2 className="animate-spin" size={18} /> : <><Save size={18} /> Save Changes</>}
                                 </button>
 
                                 <div className="pt-6 border-t border-slate-100">

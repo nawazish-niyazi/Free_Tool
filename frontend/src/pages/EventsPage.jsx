@@ -3,8 +3,11 @@ import Navbar from '../components/Navbar';
 import { Calendar, MapPin, Clock, Search, Loader2, PartyPopper, ArrowRight, ExternalLink, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import RestrictedAccess from '../components/RestrictedAccess';
 
 const EventsPage = () => {
+    const { isLoggedIn, setShowAuthModal } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -51,7 +54,11 @@ const EventsPage = () => {
                     </p>
                 </div>
 
-                {loading ? (
+                {!isLoggedIn ? (
+                    <div className="bg-white p-12 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                        <RestrictedAccess onLoginClick={() => setShowAuthModal(true)} />
+                    </div>
+                ) : loading ? (
                     <div className="flex flex-col items-center justify-center py-20">
                         <Loader2 size={48} className="text-orange-500 animate-spin mb-4" />
                         <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Loading upcoming events...</p>
